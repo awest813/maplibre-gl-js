@@ -1,0 +1,18 @@
+{
+  "generated": "2026-07-18",
+  "city": "Eminence",
+  "buildings": 1789,
+  "addresses": 1555,
+  "roads": 269,
+  "schools": 7,
+  "bridges": 20,
+  "unbuilt_addresses": 84,
+  "unaddressed_buildings": 208,
+  "building_occupancy": [
+    [
+      "Unknown",
+      1789
+    ]
+  ],
+  "notes": "Vacancy hints are heuristics from free public GIS, not official condemned/vacant lists."
+}

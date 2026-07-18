@@ -293,7 +293,283 @@ def main() -> None:
         }
     write_geojson(DATA / "census-tracts.geojson", tracts)
 
+    print("Henry County…")
+    county = query(
+        f"{base}/Ky_CountyShading_WGS84WM/MapServer/0/query",
+        {
+            "where": "UPPER(NAME)='HENRY'",
+            "outFields": "NAME,NAME2,SEAT,POP10,MILES_SQ,ADDNAME",
+            "returnGeometry": "true",
+            "f": "geojson",
+        },
+    )
+    for feat in county.get("features", []):
+        p = feat.get("properties") or {}
+        feat["properties"] = {
+            "name": p.get("NAME2") or p.get("NAME"),
+            "seat": p.get("SEAT"),
+            "pop_2010": p.get("POP10"),
+            "sq_miles": p.get("MILES_SQ"),
+            "add": p.get("ADDNAME"),
+        }
+    write_geojson(DATA / "henry-county.geojson", county)
+
+    print("Fire districts…")
+    fire = query(
+        f"{base}/Ky_911_RSB_Fire_WGS84WM/MapServer/0/query",
+        bbox_params(BBOX, "DsplayName,Agency_ID,ServiceNum,State,DateUpdate"),
+    )
+    for feat in fire.get("features", []):
+        p = feat.get("properties") or {}
+        name = p.get("DsplayName") or ""
+        if name.lower() == "eminence fd":
+            name = "Eminence Fire Department"
+        feat["properties"] = {
+            "name": name,
+            "agency": p.get("Agency_ID"),
+            "service": p.get("ServiceNum"),
+        }
+    write_geojson(DATA / "fire-districts.geojson", fire)
+
+    print("Bridges…")
+    bridges = query(
+        f"{base}/Ky_Bridge_Points_WGS84WM/MapServer/0/query",
+        bbox_params(WIDE_BBOX, "*"),
+    )
+    near = []
+    for feat in bridges.get("features", []):
+        p = feat.get("properties") or {}
+        coords = (feat.get("geometry") or {}).get("coordinates") or []
+        if len(coords) < 2:
+            continue
+        lon, lat = coords[0], coords[1]
+        if not (-85.25 <= lon <= -85.10 and 38.32 <= lat <= 38.42):
+            continue
+        feat["properties"] = {
+            "bridge_id": p.get("BRIDGE_ID"),
+            "name": p.get("BRLOC_LOCAL") or p.get("LOCATION") or p.get("RT_DESCR"),
+            "route": p.get("FACILITY_7") or p.get("RT_DESCR"),
+            "feature": p.get("FEATINT"),
+            "year_built": p.get("YEARBUILT"),
+            "length_ft": p.get("LENGTH"),
+            "county": p.get("CNTY_NAME"),
+            "historic": p.get("D_HISTSIGN"),
+            "posted": p.get("D_OPPOSTCL"),
+        }
+        near.append(feat)
+    write_geojson(DATA / "bridges.geojson", {"type": "FeatureCollection", "features": near})
+
+    print("Wastewater / water utilities…")
+    wwtp = query(
+        f"{base}/Ky_Wastewater_WGS84WM/MapServer/1/query",
+        bbox_params(WIDE_BBOX, "*"),
+    )
+    wwtp_keep = []
+    for feat in wwtp.get("features", []):
+        p = feat.get("properties") or {}
+        name = p.get("STPNAME") or p.get("SYS_NAME") or ""
+        if "EMINENCE" not in name.upper():
+            continue
+        feat["properties"] = {
+            "name": name,
+            "system": p.get("SYS_NAME"),
+            "type": p.get("OTHTYPE") or p.get("TYPE"),
+            "treatment": p.get("TREATMNT"),
+            "design_mgd": p.get("DES_CAP"),
+            "avg_flow_mgd": p.get("AVGDFL"),
+            "kpdes": p.get("KPDES"),
+            "effluent_to": p.get("EFDESTNAME"),
+        }
+        feat["properties"] = {k: v for k, v in feat["properties"].items() if v not in (None, "")}
+        wwtp_keep.append(feat)
+    write_geojson(DATA / "wwtp.geojson", {"type": "FeatureCollection", "features": wwtp_keep})
+
+    ww_imp = query(
+        f"{base}/Ky_Wastewater_WGS84WM/MapServer/0/query",
+        bbox_params(WIDE_BBOX, "*"),
+    )
+    for feat in ww_imp.get("features", []):
+        p = feat.get("properties") or {}
+        feat["properties"] = {
+            k: v
+            for k, v in {
+                "name": p.get("Sys_Name") or p.get("PNum") or "Wastewater improvement",
+                "type": p.get("Type") or p.get("OthType"),
+                "status": p.get("Status"),
+                "purpose": p.get("Purpose"),
+            }.items()
+            if v
+        }
+    write_geojson(DATA / "ww-improvements.geojson", ww_imp)
+
+    tanks = query(
+        f"{base}/Ky_Water_WGS84WM/MapServer/7/query",
+        bbox_params(BBOX, "*"),
+    )
+    for feat in tanks.get("features", []):
+        p = feat.get("properties") or {}
+        feat["properties"] = {
+            k: v
+            for k, v in {
+                "name": p.get("TANKNAME") or p.get("SYS_NAME") or "Water tank",
+                "system": p.get("SYS_NAME"),
+                "type": p.get("TYPE") or p.get("OTHTYPE"),
+                "capacity": p.get("CAPACITY"),
+            }.items()
+            if v
+        }
+    write_geojson(DATA / "water-tanks.geojson", tanks)
+
+    w_imp = query(
+        f"{base}/Ky_Water_WGS84WM/MapServer/0/query",
+        bbox_params(WIDE_BBOX, "*"),
+    )
+    for feat in w_imp.get("features", []):
+        p = feat.get("properties") or {}
+        feat["properties"] = {
+            k: v
+            for k, v in {
+                "name": p.get("Sys_Name") or p.get("SYS_NAME") or p.get("PNum") or "Water improvement",
+                "type": p.get("Type") or p.get("OthType"),
+                "status": p.get("Status"),
+                "purpose": p.get("Purpose"),
+            }.items()
+            if v
+        }
+    write_geojson(DATA / "water-improvements.geojson", w_imp)
+
+    print("Derived vacancy heuristics…")
+    derive_analysis()
+
     print("Done (free public layers only).")
+
+
+def derive_analysis() -> None:
+    import math
+    from collections import Counter
+
+    buildings = json.loads((DATA / "buildings.geojson").read_text())
+    addresses = json.loads((DATA / "addresses.geojson").read_text())
+    roads = json.loads((DATA / "roads.geojson").read_text())
+    schools = json.loads((DATA / "schools.geojson").read_text())
+    bridges = json.loads((DATA / "bridges.geojson").read_text())
+
+    def centroid(geom):
+        coords = []
+
+        def walk(c):
+            if isinstance(c[0], (int, float)):
+                coords.append(c)
+            else:
+                for x in c:
+                    walk(x)
+
+        walk(geom["coordinates"])
+        if not coords:
+            return None
+        xs = [c[0] for c in coords]
+        ys = [c[1] for c in coords]
+        return (sum(xs) / len(xs), sum(ys) / len(ys))
+
+    lat = 38.36
+    m_per_deg_lat = 111320
+    m_per_deg_lon = 111320 * math.cos(math.radians(lat))
+
+    def dist_m(a, b):
+        dx = (a[0] - b[0]) * m_per_deg_lon
+        dy = (a[1] - b[1]) * m_per_deg_lat
+        return math.hypot(dx, dy)
+
+    b_cent = []
+    for i, feat in enumerate(buildings.get("features", [])):
+        c = centroid(feat["geometry"])
+        if c:
+            b_cent.append((i, c, feat))
+
+    a_pts = []
+    for i, feat in enumerate(addresses.get("features", [])):
+        g = feat.get("geometry") or {}
+        if g.get("type") == "Point":
+            a_pts.append((i, tuple(g["coordinates"]), feat))
+
+    cell = 0.002
+    b_grid = {}
+    for item in b_cent:
+        key = (int(item[1][0] / cell), int(item[1][1] / cell))
+        b_grid.setdefault(key, []).append(item)
+    a_grid = {}
+    for item in a_pts:
+        key = (int(item[1][0] / cell), int(item[1][1] / cell))
+        a_grid.setdefault(key, []).append(item)
+
+    def nearby(grid, pt, radius_m):
+        gx, gy = int(pt[0] / cell), int(pt[1] / cell)
+        out = []
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                for item in grid.get((gx + dx, gy + dy), []):
+                    if dist_m(pt, item[1]) <= radius_m:
+                        out.append(item)
+        return out
+
+    vacant_addr = []
+    for _, pt, feat in a_pts:
+        if (feat.get("properties") or {}).get("muni", "").lower() != "eminence":
+            continue
+        if not nearby(b_grid, pt, 50):
+            props = dict(feat.get("properties") or {})
+            props["hint"] = "No building footprint within ~50m"
+            props["analysis"] = "possible_vacant_or_missing_footprint"
+            vacant_addr.append({"type": "Feature", "geometry": feat["geometry"], "properties": props})
+
+    vacant_bldg = []
+    for _, c, feat in b_cent:
+        sq = (feat.get("properties") or {}).get("SQFEET") or 0
+        if sq < 800:
+            continue
+        if not nearby(a_grid, c, 55):
+            props = dict(feat.get("properties") or {})
+            props["hint"] = "No address point within ~55m"
+            props["analysis"] = "possible_vacant_building_or_accessory"
+            vacant_bldg.append({"type": "Feature", "geometry": feat["geometry"], "properties": props})
+
+    write_geojson(
+        DATA / "analysis-unbuilt-addresses.geojson",
+        {
+            "type": "FeatureCollection",
+            "features": vacant_addr,
+            "metadata": {
+                "note": "Eminence address points with no building footprint within ~50m. Heuristic only."
+            },
+        },
+    )
+    write_geojson(
+        DATA / "analysis-unaddressed-buildings.geojson",
+        {
+            "type": "FeatureCollection",
+            "features": vacant_bldg,
+            "metadata": {
+                "note": "Buildings ≥800 sqft with no address within ~55m. Heuristic only."
+            },
+        },
+    )
+
+    occ = Counter((f.get("properties") or {}).get("OCC_CLS") or "Unknown" for f in buildings.get("features", []))
+    stats = {
+        "generated": "2026-07-18",
+        "city": "Eminence",
+        "buildings": len(buildings.get("features", [])),
+        "addresses": len(addresses.get("features", [])),
+        "roads": len(roads.get("features", [])),
+        "schools": len(schools.get("features", [])),
+        "bridges": len(bridges.get("features", [])),
+        "unbuilt_addresses": len(vacant_addr),
+        "unaddressed_buildings": len(vacant_bldg),
+        "building_occupancy": occ.most_common(10),
+        "notes": "Vacancy hints are heuristics from free public GIS, not official condemned/vacant lists.",
+    }
+    (DATA / "stats.json").write_text(json.dumps(stats, indent=2))
+    print(f"wrote stats.json ({stats['unbuilt_addresses']} unbuilt addr, {stats['unaddressed_buildings']} unaddressed bldg)")
 
 
 if __name__ == "__main__":

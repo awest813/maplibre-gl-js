@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Eminence Planning and Zoning Explorer</title>
-  <meta name="description" content="Unofficial public planning tool for Eminence, Kentucky — free Kentucky GIS layers for city limits, streets, buildings, schools, and more." />
+  <meta name="description" content="Unofficial public planning tool for Eminence, Kentucky — free Kentucky GIS layers for city limits, streets, buildings, schools, utilities, and more." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Sora:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -19,6 +19,12 @@
         <h1 class="product-title">Planning and Zoning Explorer</h1>
       </div>
       <p class="unofficial-tag" title="Not an official city or county GIS product">Unofficial public planning tool</p>
+      <form class="search-form" id="search-form" role="search">
+        <label class="sr-only" for="search-input">Search addresses</label>
+        <input id="search-input" type="search" placeholder="Search an address…" autocomplete="off" />
+        <button type="submit">Go</button>
+        <ul class="search-results" id="search-results" hidden></ul>
+      </form>
       <button type="button" class="panel-toggle" id="panel-toggle" aria-expanded="true" aria-controls="side-panel">
         Layers &amp; info
       </button>
@@ -34,6 +40,11 @@
         </section>
 
         <section class="panel-section">
+          <h2>At a glance</h2>
+          <div class="stats-grid" id="stats-grid"></div>
+        </section>
+
+        <section class="panel-section">
           <h2>Basemap</h2>
           <div class="basemap-list" id="basemap-list"></div>
         </section>
@@ -44,9 +55,25 @@
         </section>
 
         <section class="panel-section">
-          <h2>Community layers</h2>
-          <p class="hint">All layers below are free public GIS downloads—no paid PVA or county zoning files required.</p>
+          <h2>Community</h2>
           <div class="layer-list" id="layers-community"></div>
+        </section>
+
+        <section class="panel-section">
+          <h2>Utilities</h2>
+          <p class="hint">Generalized plant/project locations only—not detailed pipe networks.</p>
+          <div class="layer-list" id="layers-utilities"></div>
+        </section>
+
+        <section class="panel-section">
+          <h2>Free-data analysis</h2>
+          <p class="hint">Heuristics from addresses + buildings. Not official vacant or condemned lists.</p>
+          <div class="layer-list" id="layers-analysis"></div>
+        </section>
+
+        <section class="panel-section">
+          <h2>Legend</h2>
+          <ul class="legend" id="legend-list"></ul>
         </section>
 
         <section class="panel-section">
@@ -56,7 +83,7 @@
 
         <section class="panel-section">
           <h2>Suggest a correction</h2>
-          <p class="hint">Property owners and local officials can flag errors. This opens your email client; nothing is stored on this site.</p>
+          <p class="hint">Opens your email client; nothing is stored on this site.</p>
           <form id="correction-form" class="correction-form">
             <label>
               Your name
@@ -79,7 +106,7 @@
         </section>
 
         <section class="panel-section footer-note">
-          <p>Built only from free public data for now. Optional later requests for zoning/parcels are documented in <a href="docs/data-requests.md">data-requests.md</a>.</p>
+          <p>Built from free public data. Optional zoning/parcel request templates: <a href="docs/data-requests.md">data-requests.md</a>.</p>
         </section>
       </aside>
     </main>

@@ -1,14 +1,33 @@
-const STATUS_LABELS = {
-  ready: "Free data",
+const VERIFY_LABELS = {
+  verified_state_gis: "Public GIS",
+  estimated: "Heuristic / estimated",
 };
 
-const VERIFY_LABELS = {
-  verified_state_gis: "Public Kentucky / federal GIS",
+const GROUP_TARGETS = {
+  base: "layers-base",
+  community: "layers-community",
+  utilities: "layers-utilities",
+  analysis: "layers-analysis",
 };
+
+const LEGEND = [
+  { label: "City limits", color: "#2f4a32", kind: "line" },
+  { label: "Local streets", color: "#3a342c", kind: "line" },
+  { label: "State highways", color: "#9a6b2f", kind: "line" },
+  { label: "Buildings", color: "#6b5b4a", kind: "fill" },
+  { label: "Water", color: "#6fa0ab", kind: "fill" },
+  { label: "Flood hazard", color: "#c45c26", kind: "fill" },
+  { label: "Schools", color: "#2f4a32", kind: "dot" },
+  { label: "Utilities", color: "#3d6f7a", kind: "dot" },
+  { label: "Vacancy hints", color: "#b45309", kind: "dot" },
+];
 
 const EMPTY_FC = { type: "FeatureCollection", features: [] };
 
 const catalog = await fetch("layers.json").then((r) => r.json());
+const stats = await fetch("data/stats.json")
+  .then((r) => (r.ok ? r.json() : null))
+  .catch(() => null);
 
 document.getElementById("disclaimer-text").textContent = catalog.disclaimer;
 
@@ -34,9 +53,7 @@ function buildStyle(basemapId) {
       id: `basemap-${bm.id}`,
       type: "raster",
       source: bm.id,
-      layout: {
-        visibility: bm.id === chosen.id ? "visible" : "none",
-      },
+      layout: { visibility: bm.id === chosen.id ? "visible" : "none" },
       paint:
         bm.id === "osm"
           ? {
@@ -77,6 +94,8 @@ map.addControl(new maplibregl.ScaleControl({ unit: "imperial" }), "bottom-left")
 const featureCard = document.getElementById("feature-card");
 const featureTitle = document.getElementById("feature-title");
 const featureAttrs = document.getElementById("feature-attrs");
+let searchIndex = [];
+let searchMarker = null;
 
 document.getElementById("feature-close").addEventListener("click", () => {
   featureCard.hidden = true;
@@ -93,7 +112,7 @@ function showFeature(title, props) {
     div.innerHTML = "<dt>Info</dt><dd>No attributes</dd>";
     featureAttrs.appendChild(div);
   } else {
-    for (const [key, value] of entries.slice(0, 12)) {
+    for (const [key, value] of entries.slice(0, 14)) {
       const div = document.createElement("div");
       const dt = document.createElement("dt");
       const dd = document.createElement("dd");
@@ -117,34 +136,69 @@ async function loadGeoJSON(path) {
   }
 }
 
-function addLayerStyles(layer) {
-  const sourceId = layer.id;
+function pointStyle(sourceId, color, radius = 6) {
+  map.addLayer({
+    id: `${sourceId}-circle`,
+    type: "circle",
+    source: sourceId,
+    paint: {
+      "circle-radius": radius,
+      "circle-color": color,
+      "circle-stroke-width": 1.5,
+      "circle-stroke-color": "#f3eee4",
+    },
+  });
+  return [`${sourceId}-circle`];
+}
 
-  if (layer.id === "city-boundary") {
+function fillLine(sourceId, fill, line, fillOpacity = 0.2) {
+  map.addLayer({
+    id: `${sourceId}-fill`,
+    type: "fill",
+    source: sourceId,
+    paint: { "fill-color": fill, "fill-opacity": fillOpacity },
+  });
+  map.addLayer({
+    id: `${sourceId}-line`,
+    type: "line",
+    source: sourceId,
+    paint: { "line-color": line, "line-width": 1.4 },
+  });
+  return [`${sourceId}-fill`, `${sourceId}-line`];
+}
+
+function addLayerStyles(layer) {
+  const id = layer.id;
+
+  if (id === "henry-county") {
+    return fillLine(id, "#9a6b2f", "#9a6b2f", 0.04);
+  }
+
+  if (id === "city-boundary") {
     map.addLayer({
-      id: `${sourceId}-fill`,
+      id: `${id}-fill`,
       type: "fill",
-      source: sourceId,
+      source: id,
       paint: { "fill-color": "#2f4a32", "fill-opacity": 0.08 },
     });
     map.addLayer({
-      id: `${sourceId}-line`,
+      id: `${id}-line`,
       type: "line",
-      source: sourceId,
+      source: id,
       paint: {
         "line-color": "#2f4a32",
         "line-width": 2.5,
         "line-dasharray": [1.2, 1],
       },
     });
-    return [`${sourceId}-fill`, `${sourceId}-line`];
+    return [`${id}-fill`, `${id}-line`];
   }
 
-  if (layer.id === "roads") {
+  if (id === "roads") {
     map.addLayer({
-      id: `${sourceId}-local`,
+      id: `${id}-local`,
       type: "line",
-      source: sourceId,
+      source: id,
       filter: ["!=", ["get", "kind"], "state"],
       paint: {
         "line-color": "#3a342c",
@@ -153,9 +207,9 @@ function addLayerStyles(layer) {
       },
     });
     map.addLayer({
-      id: `${sourceId}-state`,
+      id: `${id}-state`,
       type: "line",
-      source: sourceId,
+      source: id,
       filter: ["==", ["get", "kind"], "state"],
       paint: {
         "line-color": "#9a6b2f",
@@ -163,9 +217,9 @@ function addLayerStyles(layer) {
       },
     });
     map.addLayer({
-      id: `${sourceId}-label`,
+      id: `${id}-label`,
       type: "symbol",
-      source: sourceId,
+      source: id,
       minzoom: 13.5,
       layout: {
         "symbol-placement": "line",
@@ -179,14 +233,14 @@ function addLayerStyles(layer) {
         "text-halo-width": 1.2,
       },
     });
-    return [`${sourceId}-local`, `${sourceId}-state`, `${sourceId}-label`];
+    return [`${id}-local`, `${id}-state`, `${id}-label`];
   }
 
-  if (layer.id === "addresses") {
+  if (id === "addresses") {
     map.addLayer({
-      id: `${sourceId}-circle`,
+      id: `${id}-circle`,
       type: "circle",
-      source: sourceId,
+      source: id,
       minzoom: 13,
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 1.5, 17, 4],
@@ -196,91 +250,67 @@ function addLayerStyles(layer) {
         "circle-stroke-color": "#f3eee4",
       },
     });
-    return [`${sourceId}-circle`];
+    return [`${id}-circle`];
   }
 
-  if (layer.id === "buildings") {
-    map.addLayer({
-      id: `${sourceId}-fill`,
-      type: "fill",
-      source: sourceId,
-      paint: { "fill-color": "#6b5b4a", "fill-opacity": 0.55 },
+  if (id === "buildings") {
+    return fillLine(id, "#6b5b4a", "#4a3f34", 0.55).map((styleId, i) => {
+      if (i === 1) {
+        map.setPaintProperty(styleId, "line-width", 0.6);
+        map.setPaintProperty(styleId, "line-opacity", 0.7);
+      }
+      return styleId;
     });
-    map.addLayer({
-      id: `${sourceId}-line`,
-      type: "line",
-      source: sourceId,
-      paint: { "line-color": "#4a3f34", "line-width": 0.6, "line-opacity": 0.7 },
-    });
-    return [`${sourceId}-fill`, `${sourceId}-line`];
   }
 
-  if (layer.id === "streams") {
+  if (id === "streams") {
     map.addLayer({
-      id: `${sourceId}-line`,
+      id: `${id}-line`,
       type: "line",
-      source: sourceId,
+      source: id,
       paint: { "line-color": "#3d6f7a", "line-width": 1.2, "line-opacity": 0.75 },
     });
-    return [`${sourceId}-line`];
+    return [`${id}-line`];
   }
 
-  if (layer.id === "waterbodies") {
+  if (id === "waterbodies") {
     map.addLayer({
-      id: `${sourceId}-fill`,
+      id: `${id}-fill`,
       type: "fill",
-      source: sourceId,
+      source: id,
       paint: { "fill-color": "#6fa0ab", "fill-opacity": 0.45 },
     });
-    return [`${sourceId}-fill`];
+    return [`${id}-fill`];
   }
 
-  if (layer.id === "flood-hazards") {
-    map.addLayer({
-      id: `${sourceId}-fill`,
-      type: "fill",
-      source: sourceId,
-      paint: { "fill-color": "#c45c26", "fill-opacity": 0.28 },
-    });
-    map.addLayer({
-      id: `${sourceId}-line`,
-      type: "line",
-      source: sourceId,
-      paint: { "line-color": "#9a3f14", "line-width": 1 },
-    });
-    return [`${sourceId}-fill`, `${sourceId}-line`];
+  if (id === "flood-hazards") {
+    return fillLine(id, "#c45c26", "#9a3f14", 0.28);
   }
 
-  if (layer.id === "railroads") {
+  if (id === "railroads") {
     map.addLayer({
-      id: `${sourceId}-line`,
+      id: `${id}-line`,
       type: "line",
-      source: sourceId,
+      source: id,
       paint: {
         "line-color": "#4a3a2a",
         "line-width": 2.2,
         "line-dasharray": [1, 1.2],
       },
     });
-    return [`${sourceId}-line`];
+    return [`${id}-line`];
   }
 
-  if (layer.id === "schools") {
+  if (id === "bridges") {
+    return pointStyle(id, "#6b5b4a", 5);
+  }
+
+  if (id === "schools") {
+    const ids = pointStyle(id, "#2f4a32", 7);
     map.addLayer({
-      id: `${sourceId}-circle`,
-      type: "circle",
-      source: sourceId,
-      paint: {
-        "circle-radius": 7,
-        "circle-color": "#2f4a32",
-        "circle-stroke-width": 2,
-        "circle-stroke-color": "#f3eee4",
-      },
-    });
-    map.addLayer({
-      id: `${sourceId}-label`,
+      id: `${id}-label`,
       type: "symbol",
-      source: sourceId,
+      source: id,
       minzoom: 12.5,
       layout: {
         "text-field": ["get", "name"],
@@ -294,71 +324,139 @@ function addLayerStyles(layer) {
         "text-halo-width": 1.4,
       },
     });
-    return [`${sourceId}-circle`, `${sourceId}-label`];
+    return [...ids, `${id}-label`];
   }
 
-  if (layer.id === "school-buffers") {
+  if (id === "school-buffers") {
     map.addLayer({
-      id: `${sourceId}-fill`,
+      id: `${id}-fill`,
       type: "fill",
-      source: sourceId,
+      source: id,
       paint: { "fill-color": "#4a6b4e", "fill-opacity": 0.12 },
     });
     map.addLayer({
-      id: `${sourceId}-line`,
+      id: `${id}-line`,
       type: "line",
-      source: sourceId,
+      source: id,
       paint: { "line-color": "#2f4a32", "line-width": 1, "line-dasharray": [2, 1] },
     });
-    return [`${sourceId}-fill`, `${sourceId}-line`];
+    return [`${id}-fill`, `${id}-line`];
   }
 
-  if (layer.id === "school-districts") {
-    map.addLayer({
-      id: `${sourceId}-fill`,
-      type: "fill",
-      source: sourceId,
-      paint: { "fill-color": "#9a6b2f", "fill-opacity": 0.08 },
-    });
-    map.addLayer({
-      id: `${sourceId}-line`,
-      type: "line",
-      source: sourceId,
-      paint: { "line-color": "#9a6b2f", "line-width": 2 },
-    });
-    return [`${sourceId}-fill`, `${sourceId}-line`];
+  if (id === "school-districts") {
+    return fillLine(id, "#9a6b2f", "#9a6b2f", 0.08);
   }
 
-  if (layer.id === "census-tracts") {
+  if (id === "fire-districts") {
+    return fillLine(id, "#b45309", "#9a3412", 0.08);
+  }
+
+  if (id === "census-tracts") {
+    return fillLine(id, "#3d6f7a", "#3d6f7a", 0.1);
+  }
+
+  if (id === "wwtp" || id === "water-tanks") {
+    return pointStyle(id, "#3d6f7a", 8);
+  }
+
+  if (id === "ww-improvements" || id === "water-improvements") {
     map.addLayer({
-      id: `${sourceId}-fill`,
-      type: "fill",
-      source: sourceId,
-      paint: { "fill-color": "#3d6f7a", "fill-opacity": 0.1 },
+      id: `${id}-circle`,
+      type: "circle",
+      source: id,
+      filter: ["==", ["geometry-type"], "Point"],
+      paint: {
+        "circle-radius": 6,
+        "circle-color": "#0f766e",
+        "circle-stroke-width": 1.5,
+        "circle-stroke-color": "#f3eee4",
+      },
     });
     map.addLayer({
-      id: `${sourceId}-line`,
+      id: `${id}-line`,
       type: "line",
-      source: sourceId,
-      paint: { "line-color": "#3d6f7a", "line-width": 1.2 },
+      source: id,
+      filter: ["in", ["geometry-type"], ["literal", ["LineString", "MultiLineString"]]],
+      paint: { "line-color": "#0f766e", "line-width": 2 },
     });
-    return [`${sourceId}-fill`, `${sourceId}-line`];
+    map.addLayer({
+      id: `${id}-fill`,
+      type: "fill",
+      source: id,
+      filter: ["in", ["geometry-type"], ["literal", ["Polygon", "MultiPolygon"]]],
+      paint: { "fill-color": "#0f766e", "fill-opacity": 0.2 },
+    });
+    return [`${id}-circle`, `${id}-line`, `${id}-fill`];
+  }
+
+  if (id === "analysis-unbuilt-addresses") {
+    map.addLayer({
+      id: `${id}-circle`,
+      type: "circle",
+      source: id,
+      paint: {
+        "circle-radius": 5,
+        "circle-color": "#b45309",
+        "circle-opacity": 0.9,
+        "circle-stroke-width": 1,
+        "circle-stroke-color": "#fff7ed",
+      },
+    });
+    return [`${id}-circle`];
+  }
+
+  if (id === "analysis-unaddressed-buildings") {
+    return fillLine(id, "#b45309", "#9a3412", 0.45);
   }
 
   map.addLayer({
-    id: `${sourceId}-line`,
+    id: `${id}-line`,
     type: "line",
-    source: sourceId,
+    source: id,
     paint: { "line-color": "#9a6b2f", "line-width": 1.5 },
   });
-  return [`${sourceId}-line`];
+  return [`${id}-line`];
 }
 
 function setLayerVisibility(layerIds, visible) {
   const value = visible ? "visible" : "none";
-  for (const id of layerIds) {
-    if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", value);
+  for (const styleId of layerIds) {
+    if (map.getLayer(styleId)) map.setLayoutProperty(styleId, "visibility", value);
   }
+}
+
+function renderStats() {
+  const el = document.getElementById("stats-grid");
+  if (!stats) {
+    el.innerHTML = "<p class='hint'>Stats unavailable.</p>";
+    return;
+  }
+  const items = [
+    [stats.buildings, "Buildings"],
+    [stats.addresses, "Addresses"],
+    [stats.schools, "Schools"],
+    [stats.roads, "Street segments"],
+    [stats.unbuilt_addresses, "Unbuilt address hints"],
+    [stats.unaddressed_buildings, "Unaddressed building hints"],
+  ];
+  el.innerHTML = items
+    .map(
+      ([n, label]) =>
+        `<div class="stat-card"><strong>${Number(n).toLocaleString()}</strong><span>${label}</span></div>`
+    )
+    .join("");
+}
+
+function renderLegend() {
+  const el = document.getElementById("legend-list");
+  el.innerHTML = LEGEND.map((item) => {
+    const cls = item.kind === "line" ? "swatch line" : item.kind === "dot" ? "swatch dot" : "swatch";
+    const style =
+      item.kind === "line"
+        ? `border-top-color:${item.color}`
+        : `background:${item.color}`;
+    return `<li><span class="${cls}" style="${style}"></span><span>${item.label}</span></li>`;
+  }).join("");
 }
 
 function renderBasemapControls() {
@@ -377,9 +475,9 @@ function renderBasemapControls() {
     input.addEventListener("change", () => {
       if (!input.checked) return;
       for (const bm of catalog.basemaps) {
-        const id = `basemap-${bm.id}`;
-        if (map.getLayer(id)) {
-          map.setLayoutProperty(id, "visibility", bm.id === input.value ? "visible" : "none");
+        const styleId = `basemap-${bm.id}`;
+        if (map.getLayer(styleId)) {
+          map.setLayoutProperty(styleId, "visibility", bm.id === input.value ? "visible" : "none");
         }
       }
     });
@@ -387,25 +485,28 @@ function renderBasemapControls() {
 }
 
 function renderLayerControls(layers) {
-  const baseEl = document.getElementById("layers-base");
-  const communityEl = document.getElementById("layers-community");
+  for (const id of Object.values(GROUP_TARGETS)) {
+    document.getElementById(id).innerHTML = "";
+  }
   const sourceEl = document.getElementById("source-list");
-  baseEl.innerHTML = "";
-  communityEl.innerHTML = "";
   sourceEl.innerHTML = "";
 
   for (const layer of layers) {
+    const targetId = GROUP_TARGETS[layer.group] || "layers-base";
     const row = document.createElement("div");
     row.className = "layer-row";
+    const status =
+      layer.verification_status === "estimated" ? "estimated" : "ready";
+    const statusLabel = status === "estimated" ? "Heuristic" : "Free data";
     row.innerHTML = `
       <label>
         <input type="checkbox" data-layer="${layer.id}" ${layer.defaultVisible ? "checked" : ""} />
         <span class="layer-name">${layer.name}</span>
-        <span class="status ready">${STATUS_LABELS.ready}</span>
+        <span class="status ${status}">${statusLabel}</span>
         <span class="layer-meta">${VERIFY_LABELS[layer.verification_status] || "Public GIS"}</span>
       </label>
     `;
-    (layer.group === "community" ? communityEl : baseEl).appendChild(row);
+    document.getElementById(targetId).appendChild(row);
 
     const li = document.createElement("li");
     const date = layer.updated ? ` · Updated ${layer.updated}` : "";
@@ -416,7 +517,62 @@ function renderLayerControls(layers) {
   }
 }
 
+function buildSearchIndex(addressData) {
+  searchIndex = (addressData.features || [])
+    .filter((f) => f.geometry?.type === "Point" && f.properties?.address)
+    .map((f) => ({
+      address: String(f.properties.address),
+      muni: f.properties.muni || "",
+      coordinates: f.geometry.coordinates,
+    }));
+}
+
+function runSearch(query) {
+  const q = query.trim().toLowerCase();
+  const resultsEl = document.getElementById("search-results");
+  if (!q) {
+    resultsEl.hidden = true;
+    resultsEl.innerHTML = "";
+    return;
+  }
+  const hits = searchIndex
+    .filter((item) => item.address.toLowerCase().includes(q))
+    .slice(0, 8);
+  if (!hits.length) {
+    resultsEl.hidden = false;
+    resultsEl.innerHTML = `<li><button type="button" disabled>No matches</button></li>`;
+    return;
+  }
+  resultsEl.hidden = false;
+  resultsEl.innerHTML = hits
+    .map(
+      (item, i) =>
+        `<li><button type="button" data-idx="${i}">${item.address}${item.muni ? ` · ${item.muni}` : ""}</button></li>`
+    )
+    .join("");
+  resultsEl.querySelectorAll("button[data-idx]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const item = hits[Number(btn.dataset.idx)];
+      flyToAddress(item);
+      resultsEl.hidden = true;
+    });
+  });
+}
+
+function flyToAddress(item) {
+  map.flyTo({ center: item.coordinates, zoom: 17, duration: 900 });
+  if (searchMarker) searchMarker.remove();
+  searchMarker = new maplibregl.Marker({ color: "#2f4a32" })
+    .setLngLat(item.coordinates)
+    .setPopup(new maplibregl.Popup().setText(item.address))
+    .addTo(map);
+  searchMarker.togglePopup();
+  showFeature(item.address, { address: item.address, muni: item.muni });
+}
+
 map.on("load", async () => {
+  renderStats();
+  renderLegend();
   renderBasemapControls();
   renderLayerControls(catalog.layers);
 
@@ -427,6 +583,8 @@ map.on("load", async () => {
     layer._styleIds = styleIds;
     setLayerVisibility(styleIds, layer.defaultVisible);
 
+    if (layer.id === "addresses") buildSearchIndex(data);
+
     for (const styleId of styleIds) {
       if (styleId.endsWith("-label")) continue;
       map.on("click", styleId, (e) => {
@@ -436,8 +594,7 @@ map.on("load", async () => {
           f.properties?.name ||
           f.properties?.address ||
           f.properties?.PROP_ADDR ||
-          f.properties?.NAME ||
-          f.properties?.GNIS_Name ||
+          f.properties?.bridge_id ||
           f.properties?.tract_id ||
           layer.name;
         showFeature(title, f.properties);
@@ -459,14 +616,14 @@ map.on("load", async () => {
     });
   });
 
-  const data = await loadGeoJSON("data/city-boundary.geojson");
-  if (data.features?.[0]) {
+  const city = await loadGeoJSON("data/city-boundary.geojson");
+  if (city.features?.[0]) {
     const coords = [];
     const walk = (c) => {
       if (typeof c[0] === "number") coords.push(c);
       else c.forEach(walk);
     };
-    walk(data.features[0].geometry.coordinates);
+    walk(city.features[0].geometry.coordinates);
     const bounds = coords.reduce(
       (b, c) => b.extend(c),
       new maplibregl.LngLatBounds(coords[0], coords[0])
@@ -487,6 +644,26 @@ if (window.matchMedia("(max-width: 900px)").matches) {
 } else {
   panel.classList.add("open");
 }
+
+const searchForm = document.getElementById("search-form");
+const searchInput = document.getElementById("search-input");
+searchInput.addEventListener("input", () => runSearch(searchInput.value));
+searchForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const q = searchInput.value.trim().toLowerCase();
+  const hit = searchIndex.find((item) => item.address.toLowerCase().includes(q));
+  if (hit) {
+    flyToAddress(hit);
+    document.getElementById("search-results").hidden = true;
+  } else {
+    runSearch(searchInput.value);
+  }
+});
+document.addEventListener("click", (e) => {
+  if (!searchForm.contains(e.target)) {
+    document.getElementById("search-results").hidden = true;
+  }
+});
 
 document.getElementById("correction-form").addEventListener("submit", (e) => {
   e.preventDefault();

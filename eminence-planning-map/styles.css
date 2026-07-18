@@ -223,8 +223,151 @@ body {
 }
 
 .status.request_needed,
-.status.partial {
+.status.partial,
+.status.estimated {
   color: var(--brass);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.search-form {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: center;
+  flex: 1 1 16rem;
+  max-width: 22rem;
+}
+
+.search-form input {
+  flex: 1;
+  border: 1px solid rgba(28, 36, 24, 0.2);
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  font: inherit;
+  font-size: 0.88rem;
+  background: #fffdf8;
+  color: var(--ink);
+}
+
+.search-form button {
+  border: 0;
+  border-radius: 8px;
+  background: var(--field);
+  color: var(--paper);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+}
+
+.search-results {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  right: 0;
+  z-index: 5;
+  margin: 0;
+  padding: 0.35rem;
+  list-style: none;
+  background: #fffdf8;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  max-height: 240px;
+  overflow: auto;
+}
+
+.search-results button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  font-size: 0.84rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.search-results button:hover,
+.search-results button:focus {
+  background: rgba(47, 74, 50, 0.1);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.stat-card {
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  background: rgba(47, 74, 50, 0.07);
+  border: 1px solid rgba(47, 74, 50, 0.1);
+}
+
+.stat-card strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--field);
+  line-height: 1.1;
+}
+
+.stat-card span {
+  font-size: 0.72rem;
+  color: rgba(28, 36, 24, 0.65);
+}
+
+.legend {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.legend li {
+  display: grid;
+  grid-template-columns: 1.2rem 1fr;
+  gap: 0.55rem;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.swatch {
+  width: 1.1rem;
+  height: 0.7rem;
+  border-radius: 2px;
+  border: 1px solid rgba(28, 36, 24, 0.2);
+}
+
+.swatch.line {
+  height: 0;
+  border-top-width: 3px;
+  border-radius: 0;
+  background: transparent;
+}
+
+.swatch.dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  justify-self: center;
 }
 
 .source-list {
