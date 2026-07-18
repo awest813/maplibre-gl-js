@@ -21,13 +21,13 @@ This folder is the website root. All asset paths are relative.
 
 ### GitHub Pages (included workflow)
 
-1. Merge to `main`.
-2. In the repo: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-3. The workflow [`.github/workflows/deploy-eminence-map.yml`](../.github/workflows/deploy-eminence-map.yml) publishes `eminence-planning-map/` on pushes to `main` (or run **Actions → Deploy Eminence planning map → Run workflow**).
+The workflow [`.github/workflows/deploy-eminence-map.yml`](../.github/workflows/deploy-eminence-map.yml) publishes `eminence-planning-map/` on pushes to `main` (or **Actions → Deploy Eminence planning map → Run workflow**).
 
-Site URL will look like:
+It enables GitHub Pages for **GitHub Actions** automatically on first run. If deploy still fails with a Pages permission error, open **Settings → Pages → Build and deployment → Source: GitHub Actions**, then re-run the workflow.
 
-`https://<user>.github.io/<repo>/`
+Site URL:
+
+`https://awest813.github.io/maplibre-gl-js/`
 
 ### Cloudflare Pages
 
