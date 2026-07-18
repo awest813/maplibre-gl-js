@@ -540,6 +540,12 @@ body {
     display: inline-flex;
   }
 
+  .search-form {
+    order: 5;
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
   .stage {
     grid-template-columns: 1fr;
   }
@@ -559,6 +565,6 @@ body {
   }
 
   #map {
-    min-height: calc(100dvh - 7.5rem);
+    min-height: calc(100dvh - 9.5rem);
   }
 }
