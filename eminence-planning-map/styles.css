@@ -157,9 +157,26 @@ body {
   margin-bottom: 0.65rem;
 }
 
-.layer-list {
+.layer-list,
+.basemap-list {
   display: grid;
   gap: 0.45rem;
+}
+
+.basemap-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.55rem;
+  align-items: center;
+  padding: 0.45rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.basemap-row:hover {
+  background: rgba(47, 74, 50, 0.06);
 }
 
 .layer-row {

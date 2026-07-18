@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Refresh Eminence base layers from Kentucky / public ArcGIS services."""
+"""Refresh Eminence layers from free public ArcGIS / Kentucky GIS services."""
 
 from __future__ import annotations
 
@@ -19,35 +19,13 @@ BBOX = {
     "ymax": 38.39,
     "spatialReference": {"wkid": 4326},
 }
-
-CITY_URL = (
-    "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/"
-    "Ky_CityBnd_Polygon_WGS84WM/MapServer/0/query"
-)
-ROADS_URL = (
-    "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/"
-    "Ky_911_Road_Centerlines_WGS84WM/MapServer/0/query"
-)
-ADDR_URL = (
-    "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/"
-    "Ky_911_Site_Structure_Address_Points_WGS84WM/MapServer/0/query"
-)
-BUILD_URL = (
-    "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/"
-    "Ky_ORNL_Building_Footprints_WGS84WM/MapServer/0/query"
-)
-STREAMS_URL = (
-    "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/"
-    "Ky_24K_NHD_Blueline_Streams_WGS84WM/MapServer/0/query"
-)
-WATER_URL = (
-    "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/"
-    "Ky_24K_NHD_Waterbodies_WGS84WM/MapServer/0/query"
-)
-FLOOD_URL = (
-    "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/"
-    "USA_Flood_Hazard_Reduced_Set_gdb/FeatureServer/0/query"
-)
+WIDE_BBOX = {
+    "xmin": -85.30,
+    "ymin": 38.28,
+    "xmax": -85.05,
+    "ymax": 38.45,
+    "spatialReference": {"wkid": 4326},
+}
 
 
 def query(url: str, params: dict) -> dict:
@@ -56,10 +34,10 @@ def query(url: str, params: dict) -> dict:
         return json.loads(resp.read().decode())
 
 
-def bbox_params(out_fields: str = "*", record_count: int = 5000) -> dict:
+def bbox_params(bbox: dict, out_fields: str = "*", record_count: int = 5000) -> dict:
     return {
         "where": "1=1",
-        "geometry": json.dumps(BBOX),
+        "geometry": json.dumps(bbox),
         "geometryType": "esriGeometryEnvelope",
         "inSR": "4326",
         "spatialRel": "esriSpatialRelIntersects",
@@ -106,9 +84,8 @@ def addr_enrich(props: dict) -> dict:
         props.get("St_Name"),
         props.get("St_PosTyp"),
     ]
-    address = " ".join(str(x) for x in parts if x)
     return {
-        "address": address,
+        "address": " ".join(str(x) for x in parts if x),
         "muni": props.get("Inc_Muni") or "",
         "zip": props.get("Post_Code") or "",
     }
@@ -118,7 +95,7 @@ def fetch_paginated(url: str, out_fields: str, page: int = 1000) -> dict:
     features = []
     offset = 0
     while True:
-        params = bbox_params(out_fields, page)
+        params = bbox_params(BBOX, out_fields, page)
         params["resultOffset"] = str(offset)
         params["orderByFields"] = "OBJECTID ASC"
         chunk = query(url, params)
@@ -135,10 +112,11 @@ def fetch_paginated(url: str, out_fields: str, page: int = 1000) -> dict:
 
 def main() -> None:
     DATA.mkdir(parents=True, exist_ok=True)
+    base = "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services"
 
     print("City boundary…")
     city = query(
-        CITY_URL,
+        f"{base}/Ky_CityBnd_Polygon_WGS84WM/MapServer/0/query",
         {
             "where": "NAME LIKE '%EMINENCE%'",
             "outFields": "NAME,FIPS,COUNTY,INCORP,CLASS,Area_SqMiles,POP2010,LAST_UPDT,CITYFIPS",
@@ -146,12 +124,16 @@ def main() -> None:
             "f": "geojson",
         },
     )
-    write_geojson(DATA / "city-boundary.geojson", slim_features(city, [
-        "NAME", "FIPS", "COUNTY", "INCORP", "CLASS", "Area_SqMiles", "POP2010", "LAST_UPDT", "CITYFIPS"
-    ]))
+    write_geojson(
+        DATA / "city-boundary.geojson",
+        slim_features(
+            city,
+            ["NAME", "FIPS", "COUNTY", "INCORP", "CLASS", "Area_SqMiles", "POP2010", "LAST_UPDT", "CITYFIPS"],
+        ),
+    )
 
     print("Roads…")
-    roads = query(ROADS_URL, bbox_params("*"))
+    roads = query(f"{base}/Ky_911_Road_Centerlines_WGS84WM/MapServer/0/query", bbox_params(BBOX))
     write_geojson(
         DATA / "roads.geojson",
         slim_features(
@@ -162,7 +144,7 @@ def main() -> None:
     )
 
     print("Addresses…")
-    addrs = query(ADDR_URL, bbox_params("*"))
+    addrs = query(f"{base}/Ky_911_Site_Structure_Address_Points_WGS84WM/MapServer/0/query", bbox_params(BBOX))
     write_geojson(
         DATA / "addresses.geojson",
         slim_features(
@@ -174,7 +156,7 @@ def main() -> None:
 
     print("Buildings…")
     buildings = fetch_paginated(
-        BUILD_URL,
+        f"{base}/Ky_ORNL_Building_Footprints_WGS84WM/MapServer/0/query",
         "OBJECTID,BUILD_ID,OCC_CLS,PRIM_OCC,PROP_ADDR,PROP_CITY,HEIGHT,SQFEET,PROD_DATE,SOURCE",
     )
     write_geojson(
@@ -186,24 +168,132 @@ def main() -> None:
     )
 
     print("Streams…")
-    streams = query(STREAMS_URL, bbox_params("OBJECTID,GNIS_Name,FType,FCode"))
+    streams = query(
+        f"{base}/Ky_24K_NHD_Blueline_Streams_WGS84WM/MapServer/0/query",
+        bbox_params(BBOX, "OBJECTID,GNIS_Name,FType,FCode"),
+    )
     write_geojson(DATA / "streams.geojson", slim_features(streams, ["OBJECTID", "GNIS_Name", "FType", "FCode"]))
 
     print("Waterbodies…")
-    water = query(WATER_URL, bbox_params("OBJECTID,GNIS_Name,FType,FCode,AreaSqKm"))
+    water = query(
+        f"{base}/Ky_24K_NHD_Waterbodies_WGS84WM/MapServer/0/query",
+        bbox_params(BBOX, "OBJECTID,GNIS_Name,FType,FCode,AreaSqKm"),
+    )
     write_geojson(
         DATA / "waterbodies.geojson",
         slim_features(water, ["OBJECTID", "GNIS_Name", "FType", "FCode", "AreaSqKm"]),
     )
 
     print("Flood hazards…")
-    flood = query(FLOOD_URL, bbox_params("OBJECTID,FLD_ZONE,ZONE_SUBTY,SFHA_TF", 2000))
-    write_geojson(
-        DATA / "flood-hazards.geojson",
-        slim_features(flood, ["FLD_ZONE", "ZONE_SUBTY", "SFHA_TF"]),
+    flood = query(
+        "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/"
+        "USA_Flood_Hazard_Reduced_Set_gdb/FeatureServer/0/query",
+        bbox_params(BBOX, "OBJECTID,FLD_ZONE,ZONE_SUBTY,SFHA_TF", 2000),
     )
+    write_geojson(DATA / "flood-hazards.geojson", slim_features(flood, ["FLD_ZONE", "ZONE_SUBTY", "SFHA_TF"]))
 
-    print("Done.")
+    print("Railroads…")
+    rail = query(f"{base}/Ky_Railroads_WGS84WM/MapServer/0/query", bbox_params(WIDE_BBOX, "*"))
+    for feat in rail.get("features", []):
+        p = feat.get("properties") or {}
+        feat["properties"] = {
+            k: p[k]
+            for k in [
+                "RR_Class",
+                "RR_Status",
+                "RR_Management_Company",
+                "Track_Name",
+                "CNTY_NAME",
+            ]
+            if p.get(k) not in (None, "")
+        }
+    write_geojson(DATA / "railroads.geojson", rail)
+
+    print("Schools…")
+    schools = query(
+        f"{base}/Ky_Schools_WGS84WM/MapServer/0/query",
+        {
+            "where": "UPPER(CITY) = 'EMINENCE' OR UPPER(COUNTY) = 'HENRY'",
+            "geometry": json.dumps(WIDE_BBOX),
+            "geometryType": "esriGeometryEnvelope",
+            "inSR": "4326",
+            "spatialRel": "esriSpatialRelIntersects",
+            "outFields": "SCHNAME,STREETADDRESS,CITY,ZIP,COUNTY,SCHTYPE,CLASSIFICA,LOW_GRADE,HIGH_GRADE,KDEDIST_NM",
+            "returnGeometry": "true",
+            "f": "geojson",
+            "resultRecordCount": "1000",
+        },
+    )
+    for feat in schools.get("features", []):
+        p = feat.get("properties") or {}
+        feat["properties"] = {
+            "name": p.get("SCHNAME"),
+            "address": p.get("STREETADDRESS"),
+            "city": p.get("CITY"),
+            "zip": p.get("ZIP"),
+            "county": p.get("COUNTY"),
+            "type": p.get("SCHTYPE"),
+            "classification": p.get("CLASSIFICA"),
+            "grades": f"{p.get('LOW_GRADE') or ''}-{p.get('HIGH_GRADE') or ''}".strip("-"),
+            "district": p.get("KDEDIST_NM"),
+        }
+    write_geojson(DATA / "schools.geojson", schools)
+
+    print("School buffers…")
+    buffers = query(
+        f"{base}/Ky_Public_School_Buffers_WGS84WM/MapServer/0/query",
+        {
+            "where": "UPPER(CITY)='EMINENCE'",
+            "outFields": "*",
+            "returnGeometry": "true",
+            "f": "geojson",
+            "resultRecordCount": "100",
+        },
+    )
+    for feat in buffers.get("features", []):
+        p = feat.get("properties") or {}
+        feat["properties"] = {
+            k: v
+            for k, v in {
+                "name": p.get("SCHNAME"),
+                "address": p.get("STREETADDRESS"),
+                "city": p.get("CITY"),
+                "type": p.get("SCHTYPE"),
+                "district": p.get("KDEDIST_NM"),
+            }.items()
+            if v
+        }
+    write_geojson(DATA / "school-buffers.geojson", buffers)
+
+    print("School districts…")
+    districts = query(
+        f"{base}/Ky_School_Districts_WGS84WM/MapServer/0/query",
+        {
+            "where": "UPPER(NAME) LIKE '%EMINENCE%' OR UPPER(NAME) LIKE '%HENRY%'",
+            "outFields": "NAME",
+            "returnGeometry": "true",
+            "f": "geojson",
+        },
+    )
+    for feat in districts.get("features", []):
+        feat["properties"] = {"name": (feat.get("properties") or {}).get("NAME")}
+    write_geojson(DATA / "school-districts.geojson", districts)
+
+    print("Census tracts…")
+    tracts = query(
+        f"{base}/Ky_Census_Tracts_2020_WGS84WM/MapServer/0/query",
+        bbox_params(BBOX, "Tract_ID,County_Name,Pop2020"),
+    )
+    for feat in tracts.get("features", []):
+        p = feat.get("properties") or {}
+        feat["properties"] = {
+            "tract_id": p.get("Tract_ID"),
+            "county": p.get("County_Name"),
+            "pop_2020": p.get("Pop2020"),
+        }
+    write_geojson(DATA / "census-tracts.geojson", tracts)
+
+    print("Done (free public layers only).")
 
 
 if __name__ == "__main__":

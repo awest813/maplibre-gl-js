@@ -2,10 +2,32 @@
   "title": "Eminence Planning and Zoning Explorer",
   "subtitle": "Unofficial public planning tool",
   "contactEmail": "awest40709@ucumberlands.edu",
-  "disclaimer": "This map is an unofficial public planning tool. Layers marked verified come from Kentucky GIS services. Current zoning and parcel boundaries are not yet confirmed by Henry County Planning and Zoning or the PVA. Do not treat traced or placeholder layers as official current zoning.",
+  "disclaimer": "This map uses free, publicly accessible GIS data only. It is an unofficial planning tool—not a substitute for Henry County zoning maps, PVA parcels, or legal determinations. Parcel-level zoning is not included until a free public source becomes available.",
   "center": [-85.1805, 38.3645],
   "zoom": 13.2,
   "bounds": [-85.21, 38.34, -85.14, 38.39],
+  "basemaps": [
+    {
+      "id": "osm",
+      "name": "Streets (OpenStreetMap)",
+      "type": "raster",
+      "tiles": ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      "tileSize": 256,
+      "attribution": "© OpenStreetMap contributors",
+      "default": true
+    },
+    {
+      "id": "ky-naip-2022",
+      "name": "Aerial (KY NAIP 2022)",
+      "type": "raster",
+      "tiles": [
+        "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Imagery_2022_2FT_WGS84WM/MapServer/tile/{z}/{y}/{x}"
+      ],
+      "tileSize": 256,
+      "attribution": "Kentucky DGI / NAIP 2022",
+      "maxzoom": 19
+    }
+  ],
   "layers": [
     {
       "id": "city-boundary",
@@ -16,9 +38,10 @@
       "defaultVisible": true,
       "status": "ready",
       "verification_status": "verified_state_gis",
-      "source": "Kentucky Division of Geographic Information — Corporate Boundary Polygons",
+      "source": "Kentucky DGI — Corporate Boundary Polygons",
       "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_CityBnd_Polygon_WGS84WM/MapServer/0",
       "updated": "2026-07-18",
+      "access": "free",
       "notes": "Selected NAME = EMINENCE from statewide corporate-boundary polygons."
     },
     {
@@ -33,7 +56,7 @@
       "source": "Kentucky 911 Road Centerlines",
       "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_911_Road_Centerlines_WGS84WM/MapServer",
       "updated": "2026-07-18",
-      "notes": "Styled as state highways vs local streets when name patterns indicate a highway."
+      "access": "free"
     },
     {
       "id": "addresses",
@@ -46,7 +69,8 @@
       "verification_status": "verified_state_gis",
       "source": "Kentucky 911 Site/Structure Address Points",
       "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_911_Site_Structure_Address_Points_WGS84WM/MapServer",
-      "updated": "2026-07-18"
+      "updated": "2026-07-18",
+      "access": "free"
     },
     {
       "id": "buildings",
@@ -60,7 +84,8 @@
       "source": "ORNL / Kentucky statewide building footprints",
       "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_ORNL_Building_Footprints_WGS84WM/MapServer",
       "updated": "2026-07-18",
-      "notes": "Useful for distinguishing vacant lots from developed parcels before PVA data arrives."
+      "access": "free",
+      "notes": "Helps distinguish vacant lots from developed parcels without PVA data."
     },
     {
       "id": "streams",
@@ -73,7 +98,8 @@
       "verification_status": "verified_state_gis",
       "source": "Kentucky 24K NHD Blueline Streams",
       "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_24K_NHD_Blueline_Streams_WGS84WM/MapServer",
-      "updated": "2026-07-18"
+      "updated": "2026-07-18",
+      "access": "free"
     },
     {
       "id": "waterbodies",
@@ -86,7 +112,8 @@
       "verification_status": "verified_state_gis",
       "source": "Kentucky 24K NHD Waterbodies",
       "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_24K_NHD_Waterbodies_WGS84WM/MapServer",
-      "updated": "2026-07-18"
+      "updated": "2026-07-18",
+      "access": "free"
     },
     {
       "id": "flood-hazards",
@@ -100,77 +127,78 @@
       "source": "Esri USA Flood Hazard Reduced Set (FEMA-derived)",
       "sourceUrl": "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Flood_Hazard_Reduced_Set_gdb/FeatureServer/0",
       "updated": "2026-07-18",
+      "access": "free",
       "notes": "Generalized flood hazard. Confirm with official FEMA NFHL for regulatory decisions."
     },
     {
-      "id": "current-zoning",
-      "name": "Current zoning",
-      "group": "planning",
-      "type": "placeholder",
-      "path": "data/placeholders/current-zoning.geojson",
-      "defaultVisible": false,
-      "status": "request_needed",
-      "verification_status": "awaiting_confirmation",
-      "source": "Henry County Planning and Zoning (requested)",
-      "sourceUrl": "https://henrycounty.ky.gov/Departments/Pages/Planning-Zoning.aspx",
-      "updated": null,
-      "notes": "Do not label any traced PDF layer as official current zoning without county verification."
+      "id": "railroads",
+      "name": "Railroads",
+      "group": "community",
+      "type": "geojson",
+      "path": "data/railroads.geojson",
+      "defaultVisible": true,
+      "status": "ready",
+      "verification_status": "verified_state_gis",
+      "source": "Kentucky railroads (DGI)",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Railroads_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "access": "free"
     },
     {
-      "id": "existing-land-use",
-      "name": "Existing land use",
-      "group": "planning",
-      "type": "placeholder",
-      "path": "data/placeholders/existing-land-use.geojson",
-      "defaultVisible": false,
-      "status": "partial",
-      "verification_status": "awaiting_confirmation",
-      "source": "2018 Comprehensive Land Use Plan / LandUse.pdf (reference only)",
-      "sourceUrl": "https://henrycounty.ky.gov/Departments/Pages/Planning-Zoning.aspx",
-      "updated": null,
-      "notes": "Separate from zoning. Static map exists; machine-readable GIS not yet obtained."
+      "id": "schools",
+      "name": "Schools",
+      "group": "community",
+      "type": "geojson",
+      "path": "data/schools.geojson",
+      "defaultVisible": true,
+      "status": "ready",
+      "verification_status": "verified_state_gis",
+      "source": "Kentucky public schools",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Schools_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "access": "free"
     },
     {
-      "id": "future-land-use",
-      "name": "Adopted future land use",
-      "group": "planning",
-      "type": "placeholder",
-      "path": "data/placeholders/future-land-use.geojson",
+      "id": "school-buffers",
+      "name": "School walking areas",
+      "group": "community",
+      "type": "geojson",
+      "path": "data/school-buffers.geojson",
       "defaultVisible": false,
-      "status": "partial",
-      "verification_status": "awaiting_confirmation",
-      "source": "2018 Comprehensive Plan future land use map",
-      "sourceUrl": "https://henrycounty.ky.gov/Departments/Pages/Planning-Zoning.aspx",
-      "updated": null,
-      "notes": "Expressly distinct from the zoning map in the comprehensive plan."
+      "status": "ready",
+      "verification_status": "verified_state_gis",
+      "source": "Kentucky public school buffers",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Public_School_Buffers_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "access": "free"
     },
     {
-      "id": "proposed-future-changes",
-      "name": "Proposed future changes",
-      "group": "planning",
-      "type": "placeholder",
-      "path": "data/placeholders/proposed-future-changes.geojson",
+      "id": "school-districts",
+      "name": "School districts",
+      "group": "community",
+      "type": "geojson",
+      "path": "data/school-districts.geojson",
       "defaultVisible": false,
-      "status": "request_needed",
-      "verification_status": "awaiting_confirmation",
-      "source": "Eminence City Council discussions (2025) — pending finalized write-up",
-      "sourceUrl": "https://eminence.ky.gov/Meeting%20Minutes/Minutes%20-%20February%2010%2C%202025.pdf",
-      "updated": null,
-      "notes": "Areas discussed include Ballardsville Road, North Main Street, Elm Street, and KY 55."
+      "status": "ready",
+      "verification_status": "verified_state_gis",
+      "source": "Kentucky school districts",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_School_Districts_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "access": "free"
     },
     {
-      "id": "parcels",
-      "name": "Parcel boundaries",
-      "group": "planning",
-      "type": "placeholder",
-      "path": "data/placeholders/parcels.geojson",
+      "id": "census-tracts",
+      "name": "Census tracts (2020)",
+      "group": "community",
+      "type": "geojson",
+      "path": "data/census-tracts.geojson",
       "defaultVisible": false,
-      "status": "request_needed",
-      "verification_status": "awaiting_confirmation",
-      "source": "Henry County PVA (primary) or KY Department of Revenue",
-      "sourceUrl": "https://revenue.ky.gov/Property/Mapping-Services/Pages/default.aspx",
-      "updated": null,
-      "notes": "Request parcels in/near Eminence without owner names for the public version."
+      "status": "ready",
+      "verification_status": "verified_state_gis",
+      "source": "Kentucky Census Tracts 2020",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Census_Tracts_2020_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "access": "free"
     }
   ]
 }

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Eminence Planning and Zoning Explorer</title>
-  <meta name="description" content="Unofficial public planning tool for Eminence, Kentucky — city limits, streets, buildings, and planning layers." />
+  <meta name="description" content="Unofficial public planning tool for Eminence, Kentucky — free Kentucky GIS layers for city limits, streets, buildings, schools, and more." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Sora:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -34,14 +34,19 @@
         </section>
 
         <section class="panel-section">
+          <h2>Basemap</h2>
+          <div class="basemap-list" id="basemap-list"></div>
+        </section>
+
+        <section class="panel-section">
           <h2>Base layers</h2>
           <div class="layer-list" id="layers-base"></div>
         </section>
 
         <section class="panel-section">
-          <h2>Planning layers</h2>
-          <p class="hint">Zoning and land use stay separate. Placeholders appear until Henry County confirms data.</p>
-          <div class="layer-list" id="layers-planning"></div>
+          <h2>Community layers</h2>
+          <p class="hint">All layers below are free public GIS downloads—no paid PVA or county zoning files required.</p>
+          <div class="layer-list" id="layers-community"></div>
         </section>
 
         <section class="panel-section">
@@ -74,7 +79,7 @@
         </section>
 
         <section class="panel-section footer-note">
-          <p>Next decisive step: obtain parcel and zoning files from Henry County PVA and Planning &amp; Zoning. See <a href="docs/data-requests.md">data request templates</a>.</p>
+          <p>Built only from free public data for now. Optional later requests for zoning/parcels are documented in <a href="docs/data-requests.md">data-requests.md</a>.</p>
         </section>
       </aside>
     </main>

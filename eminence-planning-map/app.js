@@ -1,15 +1,9 @@
 const STATUS_LABELS = {
-  ready: "Ready",
-  partial: "Partial",
-  request_needed: "Request needed",
+  ready: "Free data",
 };
 
 const VERIFY_LABELS = {
-  verified_state_gis: "Verified by Kentucky GIS",
-  awaiting_confirmation: "Awaiting confirmation",
-  digitized_from_pdf: "Digitized from official PDF",
-  verified_ordinance: "Verified through ordinance",
-  estimated: "Estimated",
+  verified_state_gis: "Public Kentucky / federal GIS",
 };
 
 const EMPTY_FC = { type: "FeatureCollection", features: [] };
@@ -18,34 +12,57 @@ const catalog = await fetch("layers.json").then((r) => r.json());
 
 document.getElementById("disclaimer-text").textContent = catalog.disclaimer;
 
+function buildStyle(basemapId) {
+  const basemaps = catalog.basemaps || [];
+  const chosen =
+    basemaps.find((b) => b.id === basemapId) ||
+    basemaps.find((b) => b.default) ||
+    basemaps[0];
+
+  const sources = {};
+  const layers = [];
+
+  for (const bm of basemaps) {
+    sources[bm.id] = {
+      type: "raster",
+      tiles: bm.tiles,
+      tileSize: bm.tileSize || 256,
+      attribution: bm.attribution || "",
+      maxzoom: bm.maxzoom || 22,
+    };
+    layers.push({
+      id: `basemap-${bm.id}`,
+      type: "raster",
+      source: bm.id,
+      layout: {
+        visibility: bm.id === chosen.id ? "visible" : "none",
+      },
+      paint:
+        bm.id === "osm"
+          ? {
+              "raster-saturation": -0.35,
+              "raster-brightness-min": 0.08,
+              "raster-brightness-max": 0.92,
+            }
+          : {},
+    });
+  }
+
+  return {
+    version: 8,
+    name: "Eminence free data",
+    glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+    sources,
+    layers,
+  };
+}
+
+const defaultBasemap =
+  catalog.basemaps?.find((b) => b.default)?.id || catalog.basemaps?.[0]?.id || "osm";
+
 const map = new maplibregl.Map({
   container: "map",
-  style: {
-    version: 8,
-    name: "Eminence base",
-    glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
-    sources: {
-      osm: {
-        type: "raster",
-        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-        tileSize: 256,
-        attribution:
-          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      },
-    },
-    layers: [
-      {
-        id: "osm",
-        type: "raster",
-        source: "osm",
-        paint: {
-          "raster-saturation": -0.35,
-          "raster-brightness-min": 0.08,
-          "raster-brightness-max": 0.92,
-        },
-      },
-    ],
-  },
+  style: buildStyle(defaultBasemap),
   center: catalog.center,
   zoom: catalog.zoom,
   maxBounds: [
@@ -102,15 +119,13 @@ async function loadGeoJSON(path) {
 
 function addLayerStyles(layer) {
   const sourceId = layer.id;
+
   if (layer.id === "city-boundary") {
     map.addLayer({
       id: `${sourceId}-fill`,
       type: "fill",
       source: sourceId,
-      paint: {
-        "fill-color": "#2f4a32",
-        "fill-opacity": 0.08,
-      },
+      paint: { "fill-color": "#2f4a32", "fill-opacity": 0.08 },
     });
     map.addLayer({
       id: `${sourceId}-line`,
@@ -189,20 +204,13 @@ function addLayerStyles(layer) {
       id: `${sourceId}-fill`,
       type: "fill",
       source: sourceId,
-      paint: {
-        "fill-color": "#6b5b4a",
-        "fill-opacity": 0.55,
-      },
+      paint: { "fill-color": "#6b5b4a", "fill-opacity": 0.55 },
     });
     map.addLayer({
       id: `${sourceId}-line`,
       type: "line",
       source: sourceId,
-      paint: {
-        "line-color": "#4a3f34",
-        "line-width": 0.6,
-        "line-opacity": 0.7,
-      },
+      paint: { "line-color": "#4a3f34", "line-width": 0.6, "line-opacity": 0.7 },
     });
     return [`${sourceId}-fill`, `${sourceId}-line`];
   }
@@ -212,11 +220,7 @@ function addLayerStyles(layer) {
       id: `${sourceId}-line`,
       type: "line",
       source: sourceId,
-      paint: {
-        "line-color": "#3d6f7a",
-        "line-width": 1.2,
-        "line-opacity": 0.75,
-      },
+      paint: { "line-color": "#3d6f7a", "line-width": 1.2, "line-opacity": 0.75 },
     });
     return [`${sourceId}-line`];
   }
@@ -226,10 +230,7 @@ function addLayerStyles(layer) {
       id: `${sourceId}-fill`,
       type: "fill",
       source: sourceId,
-      paint: {
-        "fill-color": "#6fa0ab",
-        "fill-opacity": 0.45,
-      },
+      paint: { "fill-color": "#6fa0ab", "fill-opacity": 0.45 },
     });
     return [`${sourceId}-fill`];
   }
@@ -239,43 +240,118 @@ function addLayerStyles(layer) {
       id: `${sourceId}-fill`,
       type: "fill",
       source: sourceId,
-      paint: {
-        "fill-color": "#c45c26",
-        "fill-opacity": 0.28,
-      },
+      paint: { "fill-color": "#c45c26", "fill-opacity": 0.28 },
     });
     map.addLayer({
       id: `${sourceId}-line`,
       type: "line",
       source: sourceId,
-      paint: {
-        "line-color": "#9a3f14",
-        "line-width": 1,
-      },
+      paint: { "line-color": "#9a3f14", "line-width": 1 },
     });
     return [`${sourceId}-fill`, `${sourceId}-line`];
   }
 
-  // Placeholder planning layers — ready for data drop-in
-  map.addLayer({
-    id: `${sourceId}-fill`,
-    type: "fill",
-    source: sourceId,
-    paint: {
-      "fill-color": "#9a6b2f",
-      "fill-opacity": 0.25,
-    },
-  });
+  if (layer.id === "railroads") {
+    map.addLayer({
+      id: `${sourceId}-line`,
+      type: "line",
+      source: sourceId,
+      paint: {
+        "line-color": "#4a3a2a",
+        "line-width": 2.2,
+        "line-dasharray": [1, 1.2],
+      },
+    });
+    return [`${sourceId}-line`];
+  }
+
+  if (layer.id === "schools") {
+    map.addLayer({
+      id: `${sourceId}-circle`,
+      type: "circle",
+      source: sourceId,
+      paint: {
+        "circle-radius": 7,
+        "circle-color": "#2f4a32",
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "#f3eee4",
+      },
+    });
+    map.addLayer({
+      id: `${sourceId}-label`,
+      type: "symbol",
+      source: sourceId,
+      minzoom: 12.5,
+      layout: {
+        "text-field": ["get", "name"],
+        "text-size": 11,
+        "text-offset": [0, 1.2],
+        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+      },
+      paint: {
+        "text-color": "#1c2418",
+        "text-halo-color": "#f3eee4",
+        "text-halo-width": 1.4,
+      },
+    });
+    return [`${sourceId}-circle`, `${sourceId}-label`];
+  }
+
+  if (layer.id === "school-buffers") {
+    map.addLayer({
+      id: `${sourceId}-fill`,
+      type: "fill",
+      source: sourceId,
+      paint: { "fill-color": "#4a6b4e", "fill-opacity": 0.12 },
+    });
+    map.addLayer({
+      id: `${sourceId}-line`,
+      type: "line",
+      source: sourceId,
+      paint: { "line-color": "#2f4a32", "line-width": 1, "line-dasharray": [2, 1] },
+    });
+    return [`${sourceId}-fill`, `${sourceId}-line`];
+  }
+
+  if (layer.id === "school-districts") {
+    map.addLayer({
+      id: `${sourceId}-fill`,
+      type: "fill",
+      source: sourceId,
+      paint: { "fill-color": "#9a6b2f", "fill-opacity": 0.08 },
+    });
+    map.addLayer({
+      id: `${sourceId}-line`,
+      type: "line",
+      source: sourceId,
+      paint: { "line-color": "#9a6b2f", "line-width": 2 },
+    });
+    return [`${sourceId}-fill`, `${sourceId}-line`];
+  }
+
+  if (layer.id === "census-tracts") {
+    map.addLayer({
+      id: `${sourceId}-fill`,
+      type: "fill",
+      source: sourceId,
+      paint: { "fill-color": "#3d6f7a", "fill-opacity": 0.1 },
+    });
+    map.addLayer({
+      id: `${sourceId}-line`,
+      type: "line",
+      source: sourceId,
+      paint: { "line-color": "#3d6f7a", "line-width": 1.2 },
+    });
+    return [`${sourceId}-fill`, `${sourceId}-line`];
+  }
+
   map.addLayer({
     id: `${sourceId}-line`,
     type: "line",
     source: sourceId,
-    paint: {
-      "line-color": "#9a6b2f",
-      "line-width": 1.5,
-    },
+    paint: { "line-color": "#9a6b2f", "line-width": 1.5 },
   });
-  return [`${sourceId}-fill`, `${sourceId}-line`];
+  return [`${sourceId}-line`];
 }
 
 function setLayerVisibility(layerIds, visible) {
@@ -285,27 +361,54 @@ function setLayerVisibility(layerIds, visible) {
   }
 }
 
+function renderBasemapControls() {
+  const el = document.getElementById("basemap-list");
+  el.innerHTML = "";
+  for (const bm of catalog.basemaps || []) {
+    const row = document.createElement("label");
+    row.className = "basemap-row";
+    row.innerHTML = `
+      <input type="radio" name="basemap" value="${bm.id}" ${bm.id === defaultBasemap ? "checked" : ""} />
+      <span>${bm.name}</span>
+    `;
+    el.appendChild(row);
+  }
+  el.querySelectorAll('input[name="basemap"]').forEach((input) => {
+    input.addEventListener("change", () => {
+      if (!input.checked) return;
+      for (const bm of catalog.basemaps) {
+        const id = `basemap-${bm.id}`;
+        if (map.getLayer(id)) {
+          map.setLayoutProperty(id, "visibility", bm.id === input.value ? "visible" : "none");
+        }
+      }
+    });
+  });
+}
+
 function renderLayerControls(layers) {
   const baseEl = document.getElementById("layers-base");
-  const planningEl = document.getElementById("layers-planning");
+  const communityEl = document.getElementById("layers-community");
   const sourceEl = document.getElementById("source-list");
+  baseEl.innerHTML = "";
+  communityEl.innerHTML = "";
+  sourceEl.innerHTML = "";
 
   for (const layer of layers) {
     const row = document.createElement("div");
     row.className = "layer-row";
-    const disabled = layer.type === "placeholder" && layer.status !== "ready";
     row.innerHTML = `
       <label>
-        <input type="checkbox" data-layer="${layer.id}" ${layer.defaultVisible ? "checked" : ""} ${disabled && !layer.defaultVisible ? "" : ""} />
+        <input type="checkbox" data-layer="${layer.id}" ${layer.defaultVisible ? "checked" : ""} />
         <span class="layer-name">${layer.name}</span>
-        <span class="status ${layer.status}">${STATUS_LABELS[layer.status] || layer.status}</span>
-        <span class="layer-meta">${VERIFY_LABELS[layer.verification_status] || layer.verification_status}</span>
+        <span class="status ready">${STATUS_LABELS.ready}</span>
+        <span class="layer-meta">${VERIFY_LABELS[layer.verification_status] || "Public GIS"}</span>
       </label>
     `;
-    (layer.group === "planning" ? planningEl : baseEl).appendChild(row);
+    (layer.group === "community" ? communityEl : baseEl).appendChild(row);
 
     const li = document.createElement("li");
-    const date = layer.updated ? ` · Updated ${layer.updated}` : " · Not yet loaded";
+    const date = layer.updated ? ` · Updated ${layer.updated}` : "";
     li.innerHTML = `<strong>${layer.name}</strong><br />
       <a href="${layer.sourceUrl}" target="_blank" rel="noopener noreferrer">${layer.source}</a>${date}
       ${layer.notes ? `<br /><span>${layer.notes}</span>` : ""}`;
@@ -313,9 +416,8 @@ function renderLayerControls(layers) {
   }
 }
 
-const interactiveIds = [];
-
 map.on("load", async () => {
+  renderBasemapControls();
   renderLayerControls(catalog.layers);
 
   for (const layer of catalog.layers) {
@@ -327,7 +429,6 @@ map.on("load", async () => {
 
     for (const styleId of styleIds) {
       if (styleId.endsWith("-label")) continue;
-      interactiveIds.push(styleId);
       map.on("click", styleId, (e) => {
         const f = e.features?.[0];
         if (!f) return;
@@ -337,6 +438,7 @@ map.on("load", async () => {
           f.properties?.PROP_ADDR ||
           f.properties?.NAME ||
           f.properties?.GNIS_Name ||
+          f.properties?.tract_id ||
           layer.name;
         showFeature(title, f.properties);
       });
@@ -357,27 +459,22 @@ map.on("load", async () => {
     });
   });
 
-  // Fit to city boundary once available
-  const city = map.getSource("city-boundary");
-  if (city) {
-    const data = await loadGeoJSON("data/city-boundary.geojson");
-    if (data.features?.[0]) {
-      const coords = [];
-      const walk = (c) => {
-        if (typeof c[0] === "number") coords.push(c);
-        else c.forEach(walk);
-      };
-      walk(data.features[0].geometry.coordinates);
-      const bounds = coords.reduce(
-        (b, c) => b.extend(c),
-        new maplibregl.LngLatBounds(coords[0], coords[0])
-      );
-      map.fitBounds(bounds, { padding: 48, duration: 1200 });
-    }
+  const data = await loadGeoJSON("data/city-boundary.geojson");
+  if (data.features?.[0]) {
+    const coords = [];
+    const walk = (c) => {
+      if (typeof c[0] === "number") coords.push(c);
+      else c.forEach(walk);
+    };
+    walk(data.features[0].geometry.coordinates);
+    const bounds = coords.reduce(
+      (b, c) => b.extend(c),
+      new maplibregl.LngLatBounds(coords[0], coords[0])
+    );
+    map.fitBounds(bounds, { padding: 48, duration: 1200 });
   }
 });
 
-// Mobile panel toggle
 const panel = document.getElementById("side-panel");
 const toggle = document.getElementById("panel-toggle");
 toggle.addEventListener("click", () => {
