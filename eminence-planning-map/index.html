@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Eminence Planning and Zoning Explorer</title>
-  <meta name="description" content="Unofficial public planning tool for Eminence, Kentucky — free parcels, zoning/land-use districts, buildings, schools, and planning analysis." />
+  <title>Eminence & New Castle Planning and Zoning Explorer</title>
+  <meta name="description" content="Unofficial public planning tool for Eminence and New Castle, Kentucky — free parcels, zoning/land-use districts, buildings, schools, and planning analysis." />
   <meta name="theme-color" content="#2f4a32" />
-  <meta property="og:title" content="Eminence Planning and Zoning Explorer" />
-  <meta property="og:description" content="Unofficial public planning tool for Eminence, Kentucky." />
+  <meta property="og:title" content="Eminence & New Castle Planning and Zoning Explorer" />
+  <meta property="og:description" content="Unofficial public planning tool for Eminence and New Castle, Kentucky." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="manifest" href="site.webmanifest" />
@@ -25,22 +25,28 @@
       <section class="map-pane" aria-label="Map stage">
         <header class="chrome">
           <div class="brand-lockup">
-            <p class="brand-name">Eminence</p>
+            <p class="brand-name">Eminence &amp; New Castle</p>
             <h1 class="product-title">Planning and Zoning Explorer</h1>
           </div>
           <p class="unofficial-tag" title="Not an official city or county GIS product">Unofficial</p>
           <form class="search-form" id="search-form" role="search">
-            <label class="sr-only" for="search-input">Search addresses</label>
-            <input id="search-input" type="search" placeholder="Search an address…" autocomplete="off" enterkeyhint="search" />
+            <label class="sr-only" for="search-input">Search addresses or city</label>
+            <input id="search-input" type="search" placeholder="Search address or city…" autocomplete="off" enterkeyhint="search" aria-autocomplete="list" aria-controls="search-results" />
             <button type="submit">Search</button>
-            <ul class="search-results" id="search-results" hidden></ul>
+            <ul class="search-results" id="search-results" role="listbox" hidden></ul>
           </form>
           <button type="button" class="panel-toggle" id="panel-toggle" aria-expanded="true" aria-controls="side-panel">
             Layers
           </button>
         </header>
 
-        <div id="map" role="application" aria-label="Eminence planning map"></div>
+        <div id="map" role="application" aria-label="Eminence and New Castle planning map"></div>
+
+        <div class="map-dock" id="map-dock" aria-label="Map tools">
+          <button type="button" class="dock-btn" id="dock-reset-btn" title="Reset view to both cities">Reset</button>
+          <button type="button" class="dock-btn" id="dock-measure-btn" aria-pressed="false" title="Measure distance">Measure</button>
+          <button type="button" class="dock-btn dock-btn-secondary" id="dock-measure-clear-btn" hidden title="Clear measurement">Clear</button>
+        </div>
 
         <div class="map-hud" id="map-hud" aria-live="polite">
           <p class="map-hint" id="map-hint">Click the map to inspect a feature</p>
@@ -49,7 +55,7 @@
 
         <div class="loading" id="loading" role="status" aria-live="polite">
           <div class="loading-card">
-            <p class="loading-title">Loading Eminence map…</p>
+            <p class="loading-title">Loading Eminence &amp; New Castle map…</p>
             <p class="loading-detail" id="loading-detail">Fetching free public layers</p>
             <div class="loading-track" aria-hidden="true">
               <div class="loading-bar" id="loading-bar"></div>
@@ -62,6 +68,10 @@
           <p class="feature-kicker" id="feature-kicker"></p>
           <h3 id="feature-title"></h3>
           <dl id="feature-attrs"></dl>
+          <div class="feature-actions">
+            <button type="button" class="feature-action" id="feature-copy-btn">Copy details</button>
+            <span class="feature-esc-hint">Esc to close</span>
+          </div>
         </div>
       </section>
 
@@ -79,22 +89,13 @@
         <div class="panel-body">
           <section class="panel-section">
             <h3>Quick views</h3>
-            <p class="hint">Jump to a common planning view.</p>
+            <p class="hint">Jump to a place or planning theme.</p>
             <div class="preset-list" id="preset-list"></div>
-            <div class="action-row">
+            <div class="action-row action-row-split">
               <button type="button" class="share-btn" id="share-btn">Copy share link</button>
+              <button type="button" class="tool-btn" id="export-png-btn">Export PNG</button>
             </div>
             <p class="hint status-line" id="share-status" hidden aria-live="polite"></p>
-          </section>
-
-          <section class="panel-section">
-            <h3>Map tools</h3>
-            <div class="tool-list">
-              <button type="button" class="tool-btn" id="export-png-btn">Export PNG</button>
-              <button type="button" class="tool-btn" id="measure-btn" aria-pressed="false">Measure</button>
-              <button type="button" class="tool-btn tool-btn-secondary" id="measure-clear-btn" hidden>Clear</button>
-              <button type="button" class="tool-btn tool-btn-secondary" id="reset-view-btn">Reset view</button>
-            </div>
           </section>
 
           <section class="panel-section">
@@ -105,48 +106,81 @@
             <div class="basemap-list" id="basemap-list"></div>
           </section>
 
-          <details class="panel-fold" open>
-            <summary>Base layers</summary>
-            <div class="layer-list" id="layers-base"></div>
+          <section class="panel-section layer-controls">
+            <div class="section-head">
+              <h3>Layers</h3>
+              <span class="section-meta" id="layer-filter-meta"></span>
+            </div>
+            <label class="layer-filter-label" for="layer-filter">
+              <span class="sr-only">Filter layers</span>
+              <input id="layer-filter" type="search" placeholder="Filter layers…" autocomplete="off" />
+            </label>
+            <div class="layer-actions">
+              <button type="button" class="tool-btn tool-btn-secondary" id="layers-defaults-btn">Defaults</button>
+              <button type="button" class="tool-btn tool-btn-secondary" id="layers-clear-btn">Clear overlays</button>
+            </div>
+          </section>
+
+          <details class="panel-fold" data-group="boundaries">
+            <summary>Boundaries <span class="fold-count" data-fold-count="boundaries"></span></summary>
+            <p class="hint">City limits, parcels, districts, and census geography.</p>
+            <div class="layer-list" id="layers-boundaries"></div>
           </details>
 
-          <details class="panel-fold" open>
-            <summary>Planning</summary>
+          <details class="panel-fold" data-group="environment">
+            <summary>Environment <span class="fold-count" data-fold-count="environment"></span></summary>
+            <p class="hint">Water, floodplain, wetlands, karst, and related hazards.</p>
+            <div class="layer-list" id="layers-environment"></div>
+          </details>
+
+          <details class="panel-fold" data-group="planning">
+            <summary>Planning <span class="fold-count" data-fold-count="planning"></span></summary>
             <p class="hint">Confirm zoning currency with Planning &amp; Zoning before relying on it.</p>
             <div class="layer-list" id="layers-planning"></div>
           </details>
 
-          <details class="panel-fold">
-            <summary>Community</summary>
+          <details class="panel-fold" data-group="safety">
+            <summary>Safety &amp; services <span class="fold-count" data-fold-count="safety"></span></summary>
+            <div class="layer-list" id="layers-safety"></div>
+          </details>
+
+          <details class="panel-fold" data-group="community">
+            <summary>Community <span class="fold-count" data-fold-count="community"></span></summary>
             <div class="layer-list" id="layers-community"></div>
           </details>
 
-          <details class="panel-fold">
-            <summary>Utilities</summary>
+          <details class="panel-fold" data-group="mobility">
+            <summary>Mobility <span class="fold-count" data-fold-count="mobility"></span></summary>
+            <div class="layer-list" id="layers-mobility"></div>
+          </details>
+
+          <details class="panel-fold" data-group="utilities">
+            <summary>Utilities <span class="fold-count" data-fold-count="utilities"></span></summary>
             <p class="hint">Generalized plant/project locations only—not pipe networks.</p>
             <div class="layer-list" id="layers-utilities"></div>
           </details>
 
-          <details class="panel-fold">
-            <summary>Places (OpenStreetMap)</summary>
-            <p class="hint">Community-mapped. Sidewalk coverage is sparse—useful as a gap signal.</p>
+          <details class="panel-fold" data-group="places">
+            <summary>Places <span class="fold-count" data-fold-count="places"></span></summary>
+            <p class="hint">Addresses and community-mapped OSM points of interest.</p>
             <div class="layer-list" id="layers-places"></div>
           </details>
 
-          <details class="panel-fold">
-            <summary>Free-data analysis</summary>
+          <details class="panel-fold" data-group="analysis">
+            <summary>Analysis <span class="fold-count" data-fold-count="analysis"></span></summary>
             <p class="hint">Heuristics only—not official vacant or sidewalk inventories.</p>
             <div class="layer-list" id="layers-analysis"></div>
+          </details>
+
+          <details class="panel-fold" open>
+            <summary>Legend <span class="fold-count" id="legend-count"></span></summary>
+            <p class="hint">Colors for layers on the map. Click a row to toggle.</p>
+            <div class="legend" id="legend-list"></div>
           </details>
 
           <details class="panel-fold">
             <summary>At a glance</summary>
             <div class="stats-grid" id="stats-grid"></div>
-          </details>
-
-          <details class="panel-fold">
-            <summary>Legend</summary>
-            <ul class="legend" id="legend-list"></ul>
           </details>
 
           <details class="panel-fold">

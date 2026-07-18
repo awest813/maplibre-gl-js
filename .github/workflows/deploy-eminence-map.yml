@@ -1,4 +1,4 @@
-name: Deploy Eminence planning map
+name: Deploy Eminence & New Castle planning map
 
 on:
   push:
@@ -33,6 +33,24 @@ jobs:
           test -f eminence-planning-map/data/parcels.geojson
           test -f eminence-planning-map/.nojekyll
           test ! -e eminence-planning-map/package.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          city = json.loads(Path("eminence-planning-map/data/city-boundary.geojson").read_text())
+          names = { (f.get("properties") or {}).get("NAME") for f in city.get("features", []) }
+          assert "EMINENCE" in names and "NEW CASTLE" in names, names
+          cat = json.loads(Path("eminence-planning-map/layers.json").read_text())
+          preset_ids = {p["id"] for p in cat.get("presets", [])}
+          assert "new-castle" in preset_ids and "eminence" in preset_ids, preset_ids
+          layer_ids = {layer["id"] for layer in cat.get("layers", [])}
+          for required in ("wetlands", "fire-stations", "police-stations", "courthouses"):
+              assert required in layer_ids, required
+              path = Path("eminence-planning-map") / next(
+                  layer["path"] for layer in cat["layers"] if layer["id"] == required
+              )
+              assert path.exists(), path
+          print("dual-city + expanded-data bundle checks passed")
+          PY
 
       - name: Publish to gh-pages
         uses: peaceiris/actions-gh-pages@v4
@@ -46,7 +64,7 @@ jobs:
       - name: Deployment notes
         run: |
           {
-            echo "## Eminence map published"
+            echo "## Eminence & New Castle map published"
             echo ""
             echo "Static files are on the \`gh-pages\` branch."
             echo ""

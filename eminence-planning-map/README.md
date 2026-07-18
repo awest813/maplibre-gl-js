@@ -1,6 +1,6 @@
-# Eminence Planning and Zoning Explorer
+# Eminence & New Castle Planning and Zoning Explorer
 
-Unofficial public planning tool for **Eminence, Kentucky**. Static site — no build step, no backend. Uses free public GIS (Kentucky GIS, OpenStreetMap, Henry County ArcGIS).
+Unofficial public planning tool for **Eminence** and **New Castle**, Kentucky (Henry County). Static site — no build step, no backend. Uses free public GIS (Kentucky GIS, OpenStreetMap, Henry County ArcGIS).
 
 > Not an official city or county product. Confirm zoning currency with Planning & Zoning. Analysis layers are heuristics. Parcel owner names are omitted.
 
@@ -21,7 +21,7 @@ This folder is the website root. All asset paths are relative.
 
 ### GitHub Pages (included workflow)
 
-The workflow [`.github/workflows/deploy-eminence-map.yml`](../.github/workflows/deploy-eminence-map.yml) publishes `eminence-planning-map/` to the `gh-pages` branch on pushes to `main` (or **Actions → Deploy Eminence planning map → Run workflow**).
+The workflow [`.github/workflows/deploy-eminence-map.yml`](../.github/workflows/deploy-eminence-map.yml) publishes `eminence-planning-map/` to the `gh-pages` branch on pushes to `main` (or **Actions → Deploy Eminence & New Castle planning map → Run workflow**).
 
 **One-time setup** (required — Actions cannot enable Pages without admin rights):
 
@@ -54,11 +54,14 @@ Upload the contents of `eminence-planning-map/` (not the whole MapLibre repo) to
 
 ## Free layers
 
-**Base:** Henry County, city limits, streets, addresses, buildings, streams, waterbodies, flood hazards  
-**Planning:** zoning/land-use districts (`HenryCoZoning` / `Landuse_Henry`), parcels without owner names  
-**Community:** railroads, bridges, schools, walking buffers, school districts, fire response areas, census tracts  
-**Utilities:** wastewater plant, wastewater projects, water tanks, water projects (generalized—not pipe networks)  
-**Places (OSM):** sidewalks/paths, parks, parking, civic/food amenities, shops  
+**Boundaries:** Henry County, city limits, parcels, school/magisterial/voting districts, census tracts & block groups  
+**Environment:** streams, waterbodies, flood hazards, wetlands, sinkholes & drainage, karst, groundwater sensitivity, priority watersheds, dams  
+**Planning:** zoning/land-use (`HenryCoZoning` / `Landuse_Henry`), brownfields, industrial parks, sewer planning units, social vulnerability, broadband  
+**Safety & services:** fire/EMS/law districts & stations, courthouses, health centers, nursing/assisted living  
+**Community:** schools & walking buffers, libraries, parks/open space, public housing, airports  
+**Mobility:** streets, railroads, bridges, traffic counts, buildings, sidewalks/paths, trails, EV chargers  
+**Utilities:** wastewater plant & projects, water tanks, pump stations, water projects (generalized—not pipe networks)  
+**Places:** addresses, OSM parks/parking/amenities/shops  
 **Analysis:** public/exempt parcels; zero-improvement parcels; unbuilt-address hints; unaddressed-building hints; possible missing sidewalks  
 
 **Basemaps:** OpenStreetMap · Kentucky NAIP 2022 aerial tiles
@@ -80,6 +83,7 @@ Useful MapLibre ecosystem references: [awesome-maplibre](https://github.com/mapl
 ```bash
 python3 scripts/fetch-ky-gis.py
 python3 scripts/fetch-henry-gis.py
+python3 scripts/fetch-extra-gis.py
 python3 scripts/fetch-osm.py
 ```
 

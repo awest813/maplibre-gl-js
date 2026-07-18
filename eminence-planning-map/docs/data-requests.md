@@ -1,6 +1,6 @@
-# Data request templates — Eminence Planning Map
+# Data request templates — Eminence & New Castle Planning Map
 
-**Still useful for verification.** The live map already loads free public `HenryCoZoning` / `HenryCoParcels` ArcGIS layers. Use these templates to confirm whether the `Landuse_Henry` layer is authoritative current zoning, request amendment history, and obtain metadata (effective date, projection, responsible agency).
+**Still useful for verification.** The live map already loads free public `HenryCoZoning` / `HenryCoParcels` ArcGIS layers for Eminence and New Castle. Use these templates to confirm whether the `Landuse_Henry` layer is authoritative current zoning, request amendment history, and obtain metadata (effective date, projection, responsible agency).
 
 Preferred formats: GeoPackage, shapefile, GeoJSON, file geodatabase, or a spreadsheet with parcel IDs and zoning classifications.
 
@@ -13,12 +13,12 @@ Preferred formats: GeoPackage, shapefile, GeoJSON, file geodatabase, or a spread
 
 ### Geographic data request
 
-> Please provide the most current machine-readable geographic data covering the City of Eminence for:
+> Please provide the most current machine-readable geographic data covering the Cities of Eminence and New Castle for:
 >
 > 1. Current zoning-district boundaries or parcel-level zoning assignments.
 > 2. All zoning-map amendments or rezonings adopted since the dataset was last updated.
 > 3. The most recently adopted future-land-use map.
-> 4. The current City of Eminence corporate boundary.
+> 4. The current corporate boundaries for Eminence and New Castle.
 > 5. Any available parcel-identification field used to connect zoning data to PVA parcels.
 > 6. Metadata showing the dataset’s effective date, projection and responsible agency.
 >
@@ -28,7 +28,7 @@ Preferred formats: GeoPackage, shapefile, GeoJSON, file geodatabase, or a spread
 
 Also request a table or copies of:
 
-- Every zoning-map amendment affecting Eminence
+- Every zoning-map amendment affecting Eminence or New Castle
 - Ordinance or case number
 - Adoption date
 - Parcel identification number
@@ -52,9 +52,9 @@ Also request a table or copies of:
 
 Kentucky Department of Revenue advises approaching the local PVA first for county property-map information. Request parcels:
 
-- Inside Eminence
-- Partially intersecting the city boundary
-- Within about one mile of the city boundary (annexation / growth analysis)
+- Inside Eminence and New Castle
+- Partially intersecting either city boundary
+- Within about one mile of either city boundary (annexation / growth analysis)
 
 Ask for:
 
@@ -86,6 +86,25 @@ Ask the city clerk for:
 - Development incentive agreements
 
 Council / meetings: https://eminence.ky.gov/our-city/Pages/City-Council-Meetings.aspx
+
+## City of New Castle
+
+**City Hall:** 31 East Cross Main Street, New Castle, KY 40050 · 502-845-5750  
+**City Clerk / Treasurer:** Lynn Adams (ladams@newcastleky.com)  
+**Site:** https://www.newcastleky.com/
+
+Ask the city clerk / city hall for:
+
+- City-owned parcels and buildings
+- Vacant, abandoned, or condemned-property lists
+- Demolition permits
+- Residential and commercial building permits
+- Annexation ordinances and maps
+- Subdivision approvals
+- Current and planned sidewalk projects
+- Water and sewer service boundaries
+- Wastewater capacity documents
+- Development incentive agreements
 
 ## Utilities
 

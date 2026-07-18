@@ -1,0 +1,1 @@
+{"type":"FeatureCollection","crs":{"type":"name","properties":{"name":"EPSG:4326"}},"features":[{"type":"Feature","id":2,"geometry":{"type":"Point","coordinates":[-85.1781618936583,38.3674287487407]},"properties":{"name":"Henry County Public Library","address":"280 E Broadway","city":"Eminence","county":"Henry","type":"Main Library"}}]}

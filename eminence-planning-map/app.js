@@ -47,10 +47,22 @@ const PROP_LABELS = {
   shop: "Shop",
   bridge_id: "Bridge ID",
   tract_id: "Census tract",
+  block_group_id: "Block group",
   pop_2020: "Population (2020)",
   POP2010: "Population (2010)",
   near_school: "Near school",
   muni: "Municipality",
+  wetland_type: "Wetland type",
+  sensitivity: "Sensitivity",
+  sensitivity_label: "Sensitivity",
+  population: "Population",
+  pct_lack_access: "% lacking broadband",
+  avg_speed: "Avg. speed",
+  hazard_class: "Hazard class",
+  truck_percent: "Truck %",
+  total_units: "Total units",
+  former_use: "Former use",
+  projected_reuse: "Projected reuse",
   COUNTY: "County",
   INCORP: "Incorporated",
   LAST_UPDT: "Last updated",
@@ -65,13 +77,37 @@ const MONEY_KEYS = new Set([
 ]);
 
 const GROUP_TARGETS = {
-  base: "layers-base",
+  boundaries: "layers-boundaries",
+  environment: "layers-environment",
   planning: "layers-planning",
+  safety: "layers-safety",
   community: "layers-community",
+  mobility: "layers-mobility",
   utilities: "layers-utilities",
   places: "layers-places",
   analysis: "layers-analysis",
 };
+
+const GROUP_LABELS = {
+  boundaries: "Boundaries",
+  environment: "Environment",
+  planning: "Planning",
+  safety: "Safety & services",
+  community: "Community",
+  mobility: "Mobility",
+  utilities: "Utilities",
+  places: "Places",
+  analysis: "Analysis",
+};
+
+/** Always-on map context — folds stay closed unless other layers in the group are on. */
+const FOUNDATION_LAYERS = new Set([
+  "city-boundary",
+  "roads",
+  "buildings",
+  "streams",
+  "waterbodies",
+]);
 
 const ZONING_COLORS = [
   "match",
@@ -90,31 +126,147 @@ const ZONING_COLORS = [
   "#9ca3af",
 ];
 
-const LEGEND = [
-  { label: "City limits", color: "#2f4a32", kind: "line" },
-  { label: "Parcels", color: "#78716c", kind: "line" },
-  { label: "Residential districts", color: "#e9c46a", kind: "fill" },
-  { label: "Business districts", color: "#63b3ed", kind: "fill" },
-  { label: "Industrial districts", color: "#57534e", kind: "fill" },
-  { label: "Agricultural districts", color: "#8a9a6d", kind: "fill" },
-  { label: "Buildings", color: "#6b5b4a", kind: "fill" },
-  { label: "Flood hazard", color: "#c45c26", kind: "fill" },
-  { label: "Public / exempt parcels", color: "#0f766e", kind: "fill" },
-  { label: "Vacancy / sidewalk hints", color: "#b45309", kind: "dot" },
-];
+/** Primary legend swatches keyed to map paint colors in addLayerStyles(). */
+const LEGEND_META = {
+  "henry-county": { kind: "fill", color: "#9a6b2f", opacity: 0.35 },
+  "city-boundary": { kind: "line", color: "#2f4a32" },
+  parcels: { kind: "line", color: "#78716c" },
+  "magisterial-districts": { kind: "fill", color: "#9a6b2f", opacity: 0.35 },
+  "voting-precincts": { kind: "fill", color: "#6b5b4a", opacity: 0.35 },
+  "census-tracts": { kind: "fill", color: "#3d6f7a", opacity: 0.35 },
+  "census-block-groups": { kind: "fill", color: "#5b8a8f", opacity: 0.35 },
+  "school-districts": { kind: "fill", color: "#9a6b2f", opacity: 0.35 },
+  streams: { kind: "line", color: "#3d6f7a" },
+  waterbodies: { kind: "fill", color: "#6fa0ab", opacity: 0.55 },
+  "flood-hazards": { kind: "fill", color: "#c45c26", opacity: 0.45 },
+  wetlands: { kind: "fill", color: "#2f6f6a", opacity: 0.45 },
+  sinkholes: { kind: "fill", color: "#7c3a2d", opacity: 0.5 },
+  "sinkhole-drainage": { kind: "fill", color: "#8b5e3c", opacity: 0.45 },
+  "karst-potential": { kind: "fill", color: "#a67c52", opacity: 0.4 },
+  "groundwater-sensitivity": {
+    items: [
+      { label: "Groundwater · low", kind: "fill", color: "#d9e0d2" },
+      { label: "Groundwater · moderate", kind: "fill", color: "#e9c46a" },
+      { label: "Groundwater · high", kind: "fill", color: "#b45309" },
+    ],
+  },
+  dams: { kind: "dot", color: "#7c3a2d" },
+  "priority-watersheds": { kind: "fill", color: "#3d6f7a", opacity: 0.35 },
+  "henry-landuse-zoning": {
+    items: [
+      { label: "Agricultural", kind: "fill", color: "#8a9a6d" },
+      { label: "Residential", kind: "fill", color: "#e9c46a" },
+      { label: "Business", kind: "fill", color: "#63b3ed" },
+      { label: "Industrial", kind: "fill", color: "#57534e" },
+    ],
+  },
+  brownfields: { kind: "dot", color: "#b45309" },
+  "industrial-parks": { kind: "fill", color: "#57534e", opacity: 0.45 },
+  "sewer-planning-units": { kind: "fill", color: "#0f766e", opacity: 0.35 },
+  "social-vulnerability": { kind: "fill", color: "#9a3412", opacity: 0.4 },
+  broadband: {
+    items: [
+      { label: "Broadband gap · low", kind: "fill", color: "#86efac" },
+      { label: "Broadband gap · moderate", kind: "fill", color: "#e9c46a" },
+      { label: "Broadband gap · high", kind: "fill", color: "#b45309" },
+    ],
+  },
+  "fire-districts": { kind: "fill", color: "#b45309", opacity: 0.35 },
+  "fire-stations": { kind: "dot", color: "#b45309" },
+  "police-stations": { kind: "dot", color: "#1d4e89" },
+  "law-districts": { kind: "fill", color: "#1d4e89", opacity: 0.35 },
+  "ems-districts": { kind: "fill", color: "#9a3412", opacity: 0.35 },
+  "ems-agencies": { kind: "dot", color: "#9a3412" },
+  courthouses: { kind: "dot", color: "#2f4a32" },
+  "health-centers": { kind: "dot", color: "#0f766e" },
+  "nursing-homes": { kind: "dot", color: "#7a4e2d" },
+  schools: { kind: "dot", color: "#2f4a32" },
+  "school-buffers": { kind: "fill", color: "#4a6b4e", opacity: 0.35 },
+  libraries: { kind: "dot", color: "#9a6b2f" },
+  "parks-open-space": { kind: "fill", color: "#4a6b4e", opacity: 0.45 },
+  "public-housing": { kind: "dot", color: "#0f766e" },
+  airports: { kind: "dot", color: "#57534e" },
+  roads: {
+    items: [
+      { label: "Local roads", kind: "line", color: "#3a342c" },
+      { label: "State roads", kind: "line", color: "#9a6b2f" },
+    ],
+  },
+  railroads: { kind: "line", color: "#4a3a2a" },
+  bridges: { kind: "dot", color: "#6b5b4a" },
+  "traffic-counts": { kind: "dot", color: "#b45309" },
+  buildings: { kind: "fill", color: "#6b5b4a", opacity: 0.65 },
+  "osm-sidewalks": { kind: "line", color: "#15803d" },
+  trails: { kind: "line", color: "#166534" },
+  "ev-chargers": { kind: "dot", color: "#15803d" },
+  wwtp: { kind: "dot", color: "#3d6f7a" },
+  "ww-improvements": { kind: "dot", color: "#0f766e" },
+  "water-tanks": { kind: "dot", color: "#3d6f7a" },
+  "water-pump-stations": { kind: "dot", color: "#3d6f7a" },
+  "water-improvements": { kind: "dot", color: "#0f766e" },
+  addresses: { kind: "dot", color: "#3d6f7a" },
+  "osm-parks": { kind: "fill", color: "#4ade80", opacity: 0.55 },
+  "osm-parking": { kind: "fill", color: "#64748b", opacity: 0.55 },
+  "osm-amenities": { kind: "dot", color: "#9a6b2f" },
+  "osm-shops": { kind: "dot", color: "#b45309" },
+  "analysis-public-exempt-parcels": { kind: "fill", color: "#0f766e", opacity: 0.55 },
+  "analysis-zero-improvement-parcels": { kind: "fill", color: "#ea580c", opacity: 0.5 },
+  "analysis-unbuilt-addresses": { kind: "dot", color: "#b45309" },
+  "analysis-unaddressed-buildings": { kind: "fill", color: "#b45309", opacity: 0.55 },
+  "analysis-missing-sidewalks": { kind: "line", color: "#b45309" },
+};
 
 /** Higher score = preferred when features overlap under the cursor. */
 function inspectPriority(styleId) {
   if (!styleId) return 0;
-  if (styleId.startsWith("addresses") || styleId.startsWith("schools") || styleId.startsWith("bridges")) return 100;
+  if (
+    styleId.startsWith("addresses") ||
+    styleId.startsWith("schools") ||
+    styleId.startsWith("bridges") ||
+    styleId.startsWith("fire-stations") ||
+    styleId.startsWith("police-stations") ||
+    styleId.startsWith("libraries") ||
+    styleId.startsWith("courthouses") ||
+    styleId.startsWith("health-centers") ||
+    styleId.startsWith("ems-agencies") ||
+    styleId.startsWith("ev-chargers") ||
+    styleId.startsWith("airports") ||
+    styleId.startsWith("nursing-homes") ||
+    styleId.startsWith("public-housing") ||
+    styleId.startsWith("brownfields") ||
+    styleId.startsWith("traffic-counts") ||
+    styleId.startsWith("dams") ||
+    styleId.startsWith("water-pump")
+  ) {
+    return 100;
+  }
   if (styleId.startsWith("osm-") || styleId.startsWith("wwtp") || styleId.startsWith("water-tanks")) return 95;
   if (styleId.startsWith("analysis-")) return 90;
   if (styleId.startsWith("henry-landuse-zoning")) return 85;
   if (styleId.startsWith("parcels")) return 80;
   if (styleId.startsWith("buildings")) return 70;
   if (styleId.startsWith("ww-") || styleId.startsWith("water-improvements")) return 65;
-  if (styleId.startsWith("flood") || styleId.startsWith("school-buffers")) return 40;
-  if (styleId.startsWith("roads") || styleId.startsWith("railroads") || styleId.startsWith("streams")) return 35;
+  if (
+    styleId.startsWith("flood") ||
+    styleId.startsWith("wetlands") ||
+    styleId.startsWith("sinkholes") ||
+    styleId.startsWith("school-buffers")
+  ) {
+    return 40;
+  }
+  if (
+    styleId.startsWith("roads") ||
+    styleId.startsWith("railroads") ||
+    styleId.startsWith("streams") ||
+    styleId.startsWith("groundwater") ||
+    styleId.startsWith("ems-districts") ||
+    styleId.startsWith("law-districts") ||
+    styleId.startsWith("fire-districts") ||
+    styleId.startsWith("magisterial") ||
+    styleId.startsWith("census-")
+  ) {
+    return 35;
+  }
   if (styleId.startsWith("city-boundary")) return 8;
   if (styleId.startsWith("henry-county")) return 4;
   return 20;
@@ -266,7 +418,7 @@ function buildStyle(basemapId) {
 
   return {
     version: 8,
-    name: "Eminence free data",
+    name: "Eminence & New Castle free data",
     glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
     sources,
     layers,
@@ -324,11 +476,31 @@ let searchMarker = null;
 let measuring = false;
 let cityBounds = null;
 let hasInspectedFeature = false;
+let lastFeatureCopyText = "";
+let searchHits = [];
+let searchActiveIndex = -1;
 const interactiveStyleIds = [];
 const failedLayers = new Set();
 
 document.getElementById("feature-close").addEventListener("click", () => {
   featureCard.hidden = true;
+});
+
+document.getElementById("feature-copy-btn")?.addEventListener("click", async () => {
+  const btn = document.getElementById("feature-copy-btn");
+  if (!lastFeatureCopyText) return;
+  try {
+    await navigator.clipboard.writeText(lastFeatureCopyText);
+    if (btn) {
+      const prev = btn.textContent;
+      btn.textContent = "Copied";
+      window.setTimeout(() => {
+        btn.textContent = prev;
+      }, 1600);
+    }
+  } catch {
+    setToolStatus("Could not copy details.");
+  }
 });
 
 function showFeature(title, props, layerName = "") {
@@ -343,6 +515,10 @@ function showFeature(title, props, layerName = "") {
     ([key, v]) =>
       !HIDDEN_PROP_KEYS.has(key) && v !== null && v !== undefined && v !== ""
   );
+  const copyLines = [];
+  if (layerName) copyLines.push(`Layer: ${layerName}`);
+  copyLines.push(title);
+
   if (!entries.length && !notes.length) {
     const div = document.createElement("div");
     const dt = document.createElement("dt");
@@ -356,10 +532,13 @@ function showFeature(title, props, layerName = "") {
       const div = document.createElement("div");
       const dt = document.createElement("dt");
       const dd = document.createElement("dd");
-      dt.textContent = humanizeKey(key);
-      dd.textContent = formatPropValue(key, value);
+      const label = humanizeKey(key);
+      const formatted = formatPropValue(key, value);
+      dt.textContent = label;
+      dd.textContent = formatted;
       div.append(dt, dd);
       featureAttrs.appendChild(div);
+      copyLines.push(`${label}: ${formatted}`);
     }
   }
 
@@ -368,7 +547,9 @@ function showFeature(title, props, layerName = "") {
     note.className = "feature-note";
     note.textContent = notes.join(" ");
     featureAttrs.appendChild(note);
+    copyLines.push(...notes);
   }
+  lastFeatureCopyText = copyLines.join("\n");
   featureCard.hidden = false;
   hasInspectedFeature = true;
   if (mapHint && !measuring) mapHint.hidden = true;
@@ -444,7 +625,25 @@ function addLayerStyles(layer) {
         "line-dasharray": [1.2, 1],
       },
     });
-    return [`${id}-fill`, `${id}-line`];
+    map.addLayer({
+      id: `${id}-label`,
+      type: "symbol",
+      source: id,
+      minzoom: 11.2,
+      layout: {
+        "text-field": ["coalesce", ["get", "label"], ["get", "NAME"], ["get", "name"], ""],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 11.2, 12, 14, 16],
+        "text-letter-spacing": 0.02,
+        "text-max-width": 10,
+      },
+      paint: {
+        "text-color": "#2f4a32",
+        "text-halo-color": "#f3eee4",
+        "text-halo-width": 1.4,
+      },
+    });
+    return [`${id}-fill`, `${id}-line`, `${id}-label`];
   }
 
   if (id === "roads") {
@@ -478,7 +677,7 @@ function addLayerStyles(layer) {
         "symbol-placement": "line",
         "text-field": ["get", "name"],
         "text-size": 11,
-        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+        "text-font": ["Noto Sans Regular"],
       },
       paint: {
         "text-color": "#3a342c",
@@ -540,6 +739,63 @@ function addLayerStyles(layer) {
     return fillLine(id, "#c45c26", "#9a3f14", 0.28);
   }
 
+  if (id === "wetlands") {
+    return fillLine(id, "#2f6f6a", "#1f4f4b", 0.35);
+  }
+
+  if (id === "sinkholes") {
+    return fillLine(id, "#7c3a2d", "#5c291f", 0.4);
+  }
+
+  if (id === "groundwater-sensitivity") {
+    map.addLayer({
+      id: `${id}-fill`,
+      type: "fill",
+      source: id,
+      paint: {
+        "fill-color": [
+          "match",
+          ["to-string", ["get", "sensitivity"]],
+          "1",
+          "#d9e0d2",
+          "2",
+          "#b7c7a8",
+          "3",
+          "#e9c46a",
+          "4",
+          "#e07a3d",
+          "5",
+          "#b45309",
+          "#c4b59a",
+        ],
+        "fill-opacity": 0.28,
+      },
+    });
+    map.addLayer({
+      id: `${id}-line`,
+      type: "line",
+      source: id,
+      paint: { "line-color": "#6b5b4a", "line-width": 1 },
+    });
+    return [`${id}-fill`, `${id}-line`];
+  }
+
+  if (id === "sinkhole-drainage") {
+    return fillLine(id, "#8b5e3c", "#6b4423", 0.28);
+  }
+
+  if (id === "karst-potential") {
+    return fillLine(id, "#a67c52", "#7a5734", 0.18);
+  }
+
+  if (id === "priority-watersheds") {
+    return fillLine(id, "#3d6f7a", "#2a4f57", 0.12);
+  }
+
+  if (id === "dams") {
+    return pointStyle(id, "#7c3a2d", 7);
+  }
+
   if (id === "railroads") {
     map.addLayer({
       id: `${id}-line`,
@@ -569,7 +825,7 @@ function addLayerStyles(layer) {
         "text-field": ["get", "name"],
         "text-size": 11,
         "text-offset": [0, 1.2],
-        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+        "text-font": ["Noto Sans Regular"],
       },
       paint: {
         "text-color": "#1c2418",
@@ -604,12 +860,115 @@ function addLayerStyles(layer) {
     return fillLine(id, "#b45309", "#9a3412", 0.08);
   }
 
+  if (id === "fire-stations") {
+    return pointStyle(id, "#b45309", 7);
+  }
+
+  if (id === "police-stations") {
+    return pointStyle(id, "#1d4e89", 7);
+  }
+
+  if (id === "law-districts") {
+    return fillLine(id, "#1d4e89", "#163a66", 0.08);
+  }
+
+  if (id === "ems-districts") {
+    return fillLine(id, "#9a3412", "#7f1d1d", 0.08);
+  }
+
+  if (id === "ems-agencies") {
+    return pointStyle(id, "#9a3412", 7);
+  }
+
+  if (id === "courthouses") {
+    return pointStyle(id, "#2f4a32", 7);
+  }
+
+  if (id === "libraries") {
+    return pointStyle(id, "#9a6b2f", 7);
+  }
+
+  if (id === "health-centers") {
+    return pointStyle(id, "#0f766e", 7);
+  }
+
+  if (id === "parks-open-space") {
+    return fillLine(id, "#4a6b4e", "#2f4a32", 0.28);
+  }
+
   if (id === "census-tracts") {
     return fillLine(id, "#3d6f7a", "#3d6f7a", 0.1);
   }
 
-  if (id === "wwtp" || id === "water-tanks") {
+  if (id === "census-block-groups") {
+    return fillLine(id, "#5b8a8f", "#3d6f7a", 0.1);
+  }
+
+  if (id === "magisterial-districts") {
+    return fillLine(id, "#9a6b2f", "#7a5224", 0.08);
+  }
+
+  if (id === "airports") {
+    return pointStyle(id, "#57534e", 7);
+  }
+
+  if (id === "nursing-homes") {
+    return pointStyle(id, "#7a4e2d", 7);
+  }
+
+  if (id === "public-housing") {
+    return pointStyle(id, "#0f766e", 7);
+  }
+
+  if (id === "traffic-counts") {
+    return pointStyle(id, "#b45309", 5);
+  }
+
+  if (id === "voting-precincts") {
+    return fillLine(id, "#6b5b4a", "#4a3f35", 0.06);
+  }
+
+  if (id === "social-vulnerability") {
+    return fillLine(id, "#9a3412", "#7f1d1d", 0.16);
+  }
+
+  if (id === "broadband") {
+    map.addLayer({
+      id: `${id}-fill`,
+      type: "fill",
+      source: id,
+      paint: {
+        "fill-color": [
+          "interpolate",
+          ["linear"],
+          ["coalesce", ["to-number", ["get", "pct_lack_access"]], 0],
+          0,
+          "#86efac",
+          10,
+          "#e9c46a",
+          25,
+          "#e07a3d",
+          40,
+          "#b45309",
+        ],
+        "fill-opacity": 0.28,
+      },
+    });
+    map.addLayer({
+      id: `${id}-line`,
+      type: "line",
+      source: id,
+      paint: { "line-color": "#3f6212", "line-width": 1 },
+    });
+    return [`${id}-fill`, `${id}-line`];
+  }
+
+  if (id === "wwtp" || id === "water-tanks" || id === "water-pump-stations") {
     return pointStyle(id, "#3d6f7a", 8);
+  }
+
+  if (id === "sewer-planning-units") {
+    return fillLine(id, "#0f766e", "#115e59", 0.12);
   }
 
   if (id === "ww-improvements" || id === "water-improvements") {
@@ -642,6 +1001,14 @@ function addLayerStyles(layer) {
     return [`${id}-circle`, `${id}-line`, `${id}-fill`];
   }
 
+  if (id === "brownfields") {
+    return pointStyle(id, "#b45309", 8);
+  }
+
+  if (id === "industrial-parks") {
+    return fillLine(id, "#57534e", "#44403c", 0.28);
+  }
+
   if (id === "henry-landuse-zoning") {
     map.addLayer({
       id: `${id}-fill`,
@@ -666,7 +1033,7 @@ function addLayerStyles(layer) {
       layout: {
         "text-field": ["get", "district_code"],
         "text-size": 12,
-        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+        "text-font": ["Noto Sans Regular"],
       },
       paint: {
         "text-color": "#1c2418",
@@ -739,14 +1106,14 @@ function addLayerStyles(layer) {
     return [`${id}-line`];
   }
 
-  if (id === "osm-sidewalks") {
+  if (id === "osm-sidewalks" || id === "trails") {
     map.addLayer({
       id: `${id}-line`,
       type: "line",
       source: id,
       paint: {
-        "line-color": "#15803d",
-        "line-width": 3,
+        "line-color": id === "trails" ? "#166534" : "#15803d",
+        "line-width": id === "trails" ? 3.5 : 3,
         "line-opacity": 0.9,
       },
     });
@@ -807,6 +1174,10 @@ function addLayerStyles(layer) {
     return pointStyle(id, "#b45309", 5);
   }
 
+  if (id === "ev-chargers") {
+    return pointStyle(id, "#15803d", 7);
+  }
+
   map.addLayer({
     id: `${id}-line`,
     type: "line",
@@ -829,32 +1200,161 @@ function renderStats() {
     el.innerHTML = "<p class='hint'>Stats unavailable.</p>";
     return;
   }
+  const byMuni = Object.fromEntries(stats.addresses_by_muni || []);
+  const eminenceAddrs = Number(byMuni.Eminence) || 0;
+  const newCastleAddrs = Number(byMuni["New Castle"]) || 0;
   const items = [
     [stats.parcels ?? 0, "Parcels"],
     [stats.zoning_polygons ?? 0, "Zoning polygons"],
     [stats.buildings, "Buildings"],
-    [stats.addresses, "Addresses"],
+    [stats.addresses, "Addresses (both)"],
+    [eminenceAddrs, "Eminence addresses"],
+    [newCastleAddrs, "New Castle addresses"],
     [stats.zero_improvement_parcels ?? 0, "Zero-improvement parcels"],
     [stats.public_exempt_parcels ?? 0, "Public / exempt parcels"],
   ];
   el.innerHTML = items
-    .map(
-      ([n, label]) =>
-        `<div class="stat-card"><strong>${Number(n).toLocaleString()}</strong><span>${label}</span></div>`
-    )
+    .map(([n, label]) => {
+      const value =
+        typeof n === "number" && Number.isFinite(n)
+          ? n.toLocaleString()
+          : escapeHtml(n ?? "—");
+      return `<div class="stat-card"><strong>${value}</strong><span>${label}</span></div>`;
+    })
     .join("");
+}
+
+function hexToRgba(hex, opacity = 1) {
+  const raw = String(hex || "").replace("#", "");
+  if (raw.length !== 3 && raw.length !== 6) return hex;
+  const full =
+    raw.length === 3
+      ? raw
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : raw;
+  const n = Number.parseInt(full, 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
+function legendItemsForLayer(layer) {
+  const meta = LEGEND_META[layer.id];
+  if (!meta) return [{ label: layer.name, kind: "fill", color: "#9a6b2f", opacity: 0.45 }];
+  if (Array.isArray(meta.items)) return meta.items;
+  return [
+    {
+      label: layer.name,
+      kind: meta.kind || "fill",
+      color: meta.color || "#9a6b2f",
+      opacity: meta.opacity,
+    },
+  ];
+}
+
+function swatchHtml(item) {
+  const kind = item.kind || "fill";
+  const cls = kind === "line" ? "swatch line" : kind === "dot" ? "swatch dot" : "swatch";
+  const color = item.color || "#9a6b2f";
+  const style =
+    kind === "line"
+      ? `border-top-color:${color}`
+      : `background:${kind === "fill" && item.opacity != null ? hexToRgba(color, item.opacity) : color}`;
+  return `<span class="${cls}" style="${style}" aria-hidden="true"></span>`;
+}
+
+function toggleLegendLayer(layerId) {
+  const input = document.querySelector(`input[data-layer="${layerId}"]`);
+  if (!input || input.disabled) return;
+  setLayerChecked(layerId, !input.checked);
+  updateLayerCount();
+  openFoldsForActiveLayers();
+  writeUrlState();
 }
 
 function renderLegend() {
   const el = document.getElementById("legend-list");
-  el.innerHTML = LEGEND.map((item) => {
-    const cls = item.kind === "line" ? "swatch line" : item.kind === "dot" ? "swatch dot" : "swatch";
-    const style =
-      item.kind === "line"
-        ? `border-top-color:${item.color}`
-        : `background:${item.color}`;
-    return `<li><span class="${cls}" style="${style}"></span><span>${item.label}</span></li>`;
-  }).join("");
+  const countEl = document.getElementById("legend-count");
+  if (!el) return;
+
+  if (!el.dataset.bound) {
+    el.dataset.bound = "1";
+    el.addEventListener("click", (e) => {
+      const row = e.target.closest("[data-legend-layer]");
+      if (!row || !el.contains(row)) return;
+      toggleLegendLayer(row.dataset.legendLayer);
+    });
+    el.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const row = e.target.closest("[data-legend-layer]");
+      if (!row || !el.contains(row)) return;
+      e.preventDefault();
+      toggleLegendLayer(row.dataset.legendLayer);
+    });
+  }
+
+  const active = (catalog?.layers || []).filter((layer) => {
+    if (failedLayers.has(layer.id)) return false;
+    return !!document.querySelector(`input[data-layer="${layer.id}"]`)?.checked;
+  });
+
+  if (!active.length) {
+    el.innerHTML = `<p class="hint legend-empty">Turn on layers to see their colors here.</p>`;
+    if (countEl) {
+      countEl.textContent = "";
+      countEl.classList.remove("has-on");
+    }
+    return;
+  }
+
+  const byGroup = new Map();
+  for (const layer of active) {
+    const group = layer.group || "boundaries";
+    if (!byGroup.has(group)) byGroup.set(group, []);
+    byGroup.get(group).push(layer);
+  }
+
+  const groupOrder = Object.keys(GROUP_TARGETS);
+  let itemCount = 0;
+  const sections = [];
+  for (const group of groupOrder) {
+    const layers = byGroup.get(group);
+    if (!layers?.length) continue;
+    const rows = [];
+    for (const layer of layers) {
+      for (const item of legendItemsForLayer(layer)) {
+        itemCount += 1;
+        rows.push(
+          `<li
+            class="legend-item"
+            data-legend-layer="${escapeHtml(layer.id)}"
+            role="button"
+            tabindex="0"
+            title="Toggle ${escapeHtml(layer.name)}"
+            aria-label="Toggle ${escapeHtml(layer.name)}"
+          >
+            ${swatchHtml(item)}
+            <span>${escapeHtml(item.label)}</span>
+          </li>`
+        );
+      }
+    }
+    sections.push(`
+      <div class="legend-group">
+        <p class="legend-group-label">${escapeHtml(GROUP_LABELS[group] || group)}</p>
+        <ul class="legend-list">${rows.join("")}</ul>
+      </div>
+    `);
+  }
+
+  el.innerHTML = sections.join("");
+  if (countEl) {
+    countEl.textContent = itemCount ? `${itemCount} on` : "";
+    countEl.classList.toggle("has-on", itemCount > 0);
+  }
 }
 
 function currentBasemapId() {
@@ -914,6 +1414,17 @@ function applyPreset(preset) {
     if (layer._styleIds) setLayerVisibility(layer._styleIds, on);
   }
   if (preset.basemap) setBasemap(preset.basemap);
+  if (preset.fitCities) {
+    fitCityBounds({ duration: 900 });
+  } else if (Array.isArray(preset.center) && preset.center.length >= 2) {
+    map.easeTo({
+      center: preset.center,
+      zoom: typeof preset.zoom === "number" ? preset.zoom : map.getZoom(),
+      duration: 900,
+    });
+  } else if (typeof preset.zoom === "number") {
+    map.easeTo({ zoom: preset.zoom, duration: 900 });
+  }
   document.querySelectorAll(".preset-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.preset === preset.id);
   });
@@ -925,15 +1436,35 @@ function applyPreset(preset) {
 function renderPresets() {
   const el = document.getElementById("preset-list");
   el.innerHTML = "";
-  for (const preset of catalog.presets || []) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "preset-btn";
-    btn.dataset.preset = preset.id;
-    btn.textContent = preset.name;
-    btn.addEventListener("click", () => applyPreset(preset));
-    el.appendChild(btn);
-  }
+  const placeIds = new Set(["overview", "eminence", "new-castle"]);
+  const places = (catalog.presets || []).filter((p) => placeIds.has(p.id));
+  const themes = (catalog.presets || []).filter((p) => !placeIds.has(p.id));
+
+  const appendGroup = (label, presets) => {
+    if (!presets.length) return;
+    const group = document.createElement("div");
+    group.className = "preset-group";
+    const title = document.createElement("p");
+    title.className = "preset-group-label";
+    title.textContent = label;
+    group.appendChild(title);
+    const row = document.createElement("div");
+    row.className = "preset-group-row";
+    for (const preset of presets) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "preset-btn";
+      btn.dataset.preset = preset.id;
+      btn.textContent = preset.name;
+      btn.addEventListener("click", () => applyPreset(preset));
+      row.appendChild(btn);
+    }
+    group.appendChild(row);
+    el.appendChild(group);
+  };
+
+  appendGroup("Place", places);
+  appendGroup("Theme", themes);
 }
 
 function restackLayers() {
@@ -941,16 +1472,48 @@ function restackLayers() {
   const underBuildings = [
     "henry-county-fill",
     "henry-county-line",
+    "groundwater-sensitivity-fill",
+    "groundwater-sensitivity-line",
+    "karst-potential-fill",
+    "karst-potential-line",
+    "priority-watersheds-fill",
+    "priority-watersheds-line",
+    "broadband-fill",
+    "broadband-line",
+    "social-vulnerability-fill",
+    "social-vulnerability-line",
     "flood-hazards-fill",
     "flood-hazards-line",
+    "wetlands-fill",
+    "wetlands-line",
+    "sinkholes-fill",
+    "sinkholes-line",
+    "sinkhole-drainage-fill",
+    "sinkhole-drainage-line",
     "school-districts-fill",
     "school-districts-line",
+    "magisterial-districts-fill",
+    "magisterial-districts-line",
+    "voting-precincts-fill",
+    "voting-precincts-line",
+    "sewer-planning-units-fill",
+    "sewer-planning-units-line",
     "fire-districts-fill",
     "fire-districts-line",
+    "ems-districts-fill",
+    "ems-districts-line",
+    "law-districts-fill",
+    "law-districts-line",
     "census-tracts-fill",
     "census-tracts-line",
+    "census-block-groups-fill",
+    "census-block-groups-line",
     "school-buffers-fill",
     "school-buffers-line",
+    "parks-open-space-fill",
+    "parks-open-space-line",
+    "industrial-parks-fill",
+    "industrial-parks-line",
     "henry-landuse-zoning-fill",
     "henry-landuse-zoning-line",
     "parcels-fill",
@@ -972,13 +1535,28 @@ function restackLayers() {
     "railroads-line",
     "analysis-missing-sidewalks-line",
     "osm-sidewalks-line",
+    "trails-line",
     "osm-parks-fill",
     "osm-parking-fill",
     "addresses-circle",
     "bridges-circle",
     "schools-circle",
+    "fire-stations-circle",
+    "police-stations-circle",
+    "ems-agencies-circle",
+    "courthouses-circle",
+    "libraries-circle",
+    "health-centers-circle",
+    "nursing-homes-circle",
+    "public-housing-circle",
+    "brownfields-circle",
+    "traffic-counts-circle",
+    "dams-circle",
+    "airports-circle",
+    "ev-chargers-circle",
     "wwtp-circle",
     "water-tanks-circle",
+    "water-pump-stations-circle",
     "ww-improvements-circle",
     "ww-improvements-line",
     "ww-improvements-fill",
@@ -992,6 +1570,7 @@ function restackLayers() {
     "analysis-unbuilt-addresses-circle",
     "city-boundary-fill",
     "city-boundary-line",
+    "city-boundary-label",
     "henry-landuse-zoning-label",
     "roads-label",
     "schools-label",
@@ -1056,24 +1635,18 @@ function applyUrlState(state) {
 }
 
 function openFoldsForActiveLayers() {
-  const groupToFold = {
-    base: "layers-base",
-    planning: "layers-planning",
-    community: "layers-community",
-    utilities: "layers-utilities",
-    places: "layers-places",
-    analysis: "layers-analysis",
-  };
-  for (const [group, listId] of Object.entries(groupToFold)) {
+  for (const [group, listId] of Object.entries(GROUP_TARGETS)) {
     const list = document.getElementById(listId);
     const fold = list?.closest("details");
     if (!fold) continue;
-    const hasOn = catalog.layers.some(
+    // Foundation layers alone should not force folds open — keeps the panel scannable.
+    const hasOverlay = catalog.layers.some(
       (layer) =>
         layer.group === group &&
+        !FOUNDATION_LAYERS.has(layer.id) &&
         document.querySelector(`input[data-layer="${layer.id}"]`)?.checked
     );
-    if (hasOn) fold.open = true;
+    fold.open = hasOverlay;
   }
 }
 
@@ -1093,17 +1666,92 @@ function layerStatusMeta(layer) {
   return { status: "ready", statusLabel: "Free data" };
 }
 
+function updateFoldCounts() {
+  for (const fold of document.querySelectorAll(".panel-fold[data-group]")) {
+    const group = fold.dataset.group;
+    const badge = fold.querySelector(`[data-fold-count="${group}"]`);
+    if (!badge) continue;
+    const inputs = [...fold.querySelectorAll("input[data-layer]:not(:disabled)")];
+    const on = inputs.filter((input) => input.checked).length;
+    badge.textContent = on ? `${on} on` : "";
+    badge.classList.toggle("has-on", on > 0);
+  }
+}
+
 function updateLayerCount() {
   const label = document.getElementById("layer-count-label");
-  if (!label) return;
   const inputs = [...document.querySelectorAll("input[data-layer]:not(:disabled)")];
   const on = inputs.filter((input) => input.checked).length;
-  label.textContent = `${on} of ${inputs.length} layers on`;
+  if (label) label.textContent = `${on} of ${inputs.length} on`;
+  const toggleBtn = document.getElementById("panel-toggle");
+  const sidePanel = document.getElementById("side-panel");
+  const panelOpen = sidePanel?.classList.contains("open");
+  if (toggleBtn && window.matchMedia("(max-width: 900px)").matches) {
+    toggleBtn.textContent = panelOpen ? "Close" : on ? `Layers · ${on}` : "Layers";
+  }
+  updateFoldCounts();
+  renderLegend();
 }
 
 function syncLayerRowState(input) {
   const row = input.closest(".layer-row");
   if (row) row.classList.toggle("on", input.checked);
+}
+
+function filterLayerList(query) {
+  const q = query.trim().toLowerCase();
+  let visible = 0;
+  for (const row of document.querySelectorAll(".layer-row")) {
+    const name = row.querySelector(".layer-name")?.textContent?.toLowerCase() || "";
+    const meta = row.querySelector(".layer-meta")?.textContent?.toLowerCase() || "";
+    const match = !q || name.includes(q) || meta.includes(q);
+    row.hidden = !match;
+    if (match) visible += 1;
+  }
+  for (const fold of document.querySelectorAll(".panel-fold[data-group]")) {
+    const anyVisible = [...fold.querySelectorAll(".layer-row")].some((row) => !row.hidden);
+    fold.classList.toggle("filter-empty", Boolean(q) && !anyVisible);
+    if (q && anyVisible) fold.open = true;
+  }
+  const meta = document.getElementById("layer-filter-meta");
+  if (meta) meta.textContent = q ? `${visible} shown` : "";
+}
+
+function setLayerChecked(layerId, on) {
+  const layer = catalog.layers.find((l) => l.id === layerId);
+  const input = document.querySelector(`input[data-layer="${layerId}"]`);
+  if (!layer || !input || input.disabled) return;
+  input.checked = on;
+  syncLayerRowState(input);
+  if (layer._styleIds) setLayerVisibility(layer._styleIds, on);
+}
+
+function applyDefaultLayers() {
+  for (const layer of catalog.layers) {
+    setLayerChecked(layer.id, !!layer.defaultVisible && !failedLayers.has(layer.id));
+  }
+  document.querySelectorAll(".preset-btn").forEach((btn) => btn.classList.remove("active"));
+  updateLayerCount();
+  openFoldsForActiveLayers();
+  writeUrlState();
+  setToolStatus("Restored default layers.");
+}
+
+function clearOverlayLayers() {
+  for (const layer of catalog.layers) {
+    const keep =
+      layer.id === "city-boundary" ||
+      layer.id === "roads" ||
+      layer.id === "buildings" ||
+      layer.id === "streams" ||
+      layer.id === "waterbodies";
+    setLayerChecked(layer.id, keep && !failedLayers.has(layer.id));
+  }
+  document.querySelectorAll(".preset-btn").forEach((btn) => btn.classList.remove("active"));
+  updateLayerCount();
+  openFoldsForActiveLayers();
+  writeUrlState();
+  setToolStatus("Cleared overlays. Foundation layers kept.");
 }
 
 function renderLayerControls(layers) {
@@ -1114,7 +1762,7 @@ function renderLayerControls(layers) {
   sourceEl.innerHTML = "";
 
   for (const layer of layers) {
-    const targetId = GROUP_TARGETS[layer.group] || "layers-base";
+    const targetId = GROUP_TARGETS[layer.group] || "layers-boundaries";
     const row = document.createElement("div");
     const on = !!layer.defaultVisible && !failedLayers.has(layer.id);
     row.className = `layer-row${on ? " on" : ""}`;
@@ -1210,14 +1858,16 @@ function setupFeatureInspect() {
 }
 
 function computeCityBounds(cityData) {
-  const feature = cityData?.features?.[0];
-  if (!feature?.geometry?.coordinates) return null;
+  const features = cityData?.features || [];
+  if (!features.length) return null;
   const coords = [];
   const walk = (c) => {
     if (typeof c[0] === "number") coords.push(c);
     else c.forEach(walk);
   };
-  walk(feature.geometry.coordinates);
+  for (const feature of features) {
+    if (feature?.geometry?.coordinates) walk(feature.geometry.coordinates);
+  }
   if (!coords.length) return null;
   return coords.reduce(
     (b, c) => b.extend(c),
@@ -1270,10 +1920,23 @@ function buildSearchIndex(addressData) {
     }));
 }
 
+function highlightSearchResult(index) {
+  const resultsEl = document.getElementById("search-results");
+  const buttons = [...resultsEl.querySelectorAll("button[data-idx]")];
+  buttons.forEach((btn, i) => {
+    btn.classList.toggle("active", i === index);
+    if (i === index) btn.setAttribute("aria-selected", "true");
+    else btn.removeAttribute("aria-selected");
+  });
+  if (index >= 0 && buttons[index]) buttons[index].scrollIntoView({ block: "nearest" });
+}
+
 function runSearch(query) {
   const q = query.trim().toLowerCase();
   const resultsEl = document.getElementById("search-results");
+  searchActiveIndex = -1;
   if (!q) {
+    searchHits = [];
     resultsEl.hidden = true;
     resultsEl.innerHTML = "";
     return;
@@ -1281,27 +1944,33 @@ function runSearch(query) {
   const scored = [];
   for (const item of searchIndex) {
     const addr = item.address.toLowerCase();
-    if (!addr.includes(q)) continue;
-    const score = addr.startsWith(q) ? 0 : addr.split(/\s+/).some((w) => w.startsWith(q)) ? 1 : 2;
+    const muni = String(item.muni || "").toLowerCase();
+    const haystack = `${addr} ${muni}`.trim();
+    if (!haystack.includes(q) && !muni.includes(q)) continue;
+    let score = 3;
+    if (addr.startsWith(q)) score = 0;
+    else if (addr.split(/\s+/).some((w) => w.startsWith(q))) score = 1;
+    else if (muni && (muni === q || muni.startsWith(q))) score = 1;
+    else if (addr.includes(q)) score = 2;
     scored.push({ item, score });
   }
   scored.sort((a, b) => a.score - b.score || a.item.address.localeCompare(b.item.address));
-  const hits = scored.slice(0, 8).map((row) => row.item);
-  if (!hits.length) {
+  searchHits = scored.slice(0, 8).map((row) => row.item);
+  if (!searchHits.length) {
     resultsEl.hidden = false;
     resultsEl.innerHTML = `<li><button type="button" disabled>No matches</button></li>`;
     return;
   }
   resultsEl.hidden = false;
-  resultsEl.innerHTML = hits
+  resultsEl.innerHTML = searchHits
     .map((item, i) => {
       const label = escapeHtml(item.address) + (item.muni ? ` · ${escapeHtml(item.muni)}` : "");
-      return `<li><button type="button" data-idx="${i}">${label}</button></li>`;
+      return `<li><button type="button" role="option" data-idx="${i}">${label}</button></li>`;
     })
     .join("");
   resultsEl.querySelectorAll("button[data-idx]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const item = hits[Number(btn.dataset.idx)];
+      const item = searchHits[Number(btn.dataset.idx)];
       flyToAddress(item);
       resultsEl.hidden = true;
     });
@@ -1411,11 +2080,23 @@ map.on("load", async () => {
     }, 3200);
   });
 
-  document.getElementById("reset-view-btn")?.addEventListener("click", () => {
+  document.getElementById("dock-reset-btn")?.addEventListener("click", () => {
     fitCityBounds();
     setToolStatus("Returned to city overview.");
   });
 
+  document.getElementById("layers-defaults-btn")?.addEventListener("click", () => {
+    applyDefaultLayers();
+  });
+  document.getElementById("layers-clear-btn")?.addEventListener("click", () => {
+    clearOverlayLayers();
+  });
+  document.getElementById("layer-filter")?.addEventListener("input", (e) => {
+    filterLayerList(e.target.value);
+  });
+
+  openFoldsForActiveLayers();
+  updateFoldCounts();
   setupMapTools();
 });
 
@@ -1434,9 +2115,10 @@ function haversineMiles(a, b) {
 
 function setupMapTools() {
   const exportBtn = document.getElementById("export-png-btn");
-  const measureBtn = document.getElementById("measure-btn");
-  const clearBtn = document.getElementById("measure-clear-btn");
+  const measureBtn = document.getElementById("dock-measure-btn");
+  const clearBtn = document.getElementById("dock-measure-clear-btn");
   const measureCoords = [];
+  if (!measureBtn || !clearBtn || !exportBtn) return;
 
   map.addSource("measure-line", {
     type: "geojson",
@@ -1532,7 +2214,7 @@ function setupMapTools() {
         const canvas = map.getCanvas();
         const href = canvas.toDataURL("image/png");
         const link = document.createElement("a");
-        link.download = `eminence-planning-map-${new Date().toISOString().slice(0, 10)}.png`;
+        link.download = `henry-planning-map-${new Date().toISOString().slice(0, 10)}.png`;
         link.href = href;
         link.click();
         setToolStatus("PNG downloaded.");
@@ -1584,7 +2266,12 @@ function resizeMapSoon() {
 function setPanelOpen(open) {
   panel.classList.toggle("open", open);
   toggle.setAttribute("aria-expanded", String(open));
-  toggle.textContent = open ? "Close" : "Layers";
+  if (window.matchMedia("(max-width: 900px)").matches) {
+    if (open) toggle.textContent = "Close";
+    else updateLayerCount();
+  } else {
+    toggle.textContent = "Layers";
+  }
   if (backdrop) backdrop.hidden = !open || !window.matchMedia("(max-width: 900px)").matches;
   resizeMapSoon();
 }
@@ -1617,10 +2304,40 @@ document.addEventListener("keydown", (e) => {
 const searchForm = document.getElementById("search-form");
 const searchInput = document.getElementById("search-input");
 searchInput.addEventListener("input", () => runSearch(searchInput.value));
+searchInput.addEventListener("keydown", (e) => {
+  const resultsEl = document.getElementById("search-results");
+  if (resultsEl.hidden || !searchHits.length) return;
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    searchActiveIndex = Math.min(searchHits.length - 1, searchActiveIndex + 1);
+    highlightSearchResult(searchActiveIndex);
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    searchActiveIndex = Math.max(0, searchActiveIndex - 1);
+    highlightSearchResult(searchActiveIndex);
+  } else if (e.key === "Enter" && searchActiveIndex >= 0) {
+    e.preventDefault();
+    flyToAddress(searchHits[searchActiveIndex]);
+    resultsEl.hidden = true;
+  }
+});
 searchForm.addEventListener("submit", (e) => {
   e.preventDefault();
+  if (searchActiveIndex >= 0 && searchHits[searchActiveIndex]) {
+    flyToAddress(searchHits[searchActiveIndex]);
+    document.getElementById("search-results").hidden = true;
+    return;
+  }
   const q = searchInput.value.trim().toLowerCase();
-  const hit = searchIndex.find((item) => item.address.toLowerCase().includes(q));
+  const hit =
+    searchHits[0] ||
+    searchIndex.find(
+      (item) =>
+        item.address.toLowerCase().includes(q) ||
+        String(item.muni || "")
+          .toLowerCase()
+          .includes(q)
+    );
   if (hit) {
     flyToAddress(hit);
     document.getElementById("search-results").hidden = true;
@@ -1638,7 +2355,7 @@ document.getElementById("correction-form").addEventListener("submit", (e) => {
   e.preventDefault();
   writeUrlState();
   const fd = new FormData(e.target);
-  const subject = encodeURIComponent("Eminence map correction");
+  const subject = encodeURIComponent("Eminence & New Castle map correction");
   const body = encodeURIComponent(
     [
       `Name: ${fd.get("name")}`,
@@ -1650,7 +2367,7 @@ document.getElementById("correction-form").addEventListener("submit", (e) => {
       "",
       `Map link: ${location.href}`,
       "",
-      "Sent from the Eminence Planning and Zoning Explorer (unofficial).",
+      "Sent from the Eminence & New Castle Planning and Zoning Explorer (unofficial).",
     ].join("\n")
   );
   const to = catalog.contactEmail || "";
