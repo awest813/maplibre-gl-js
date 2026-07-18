@@ -21,9 +21,13 @@ This folder is the website root. All asset paths are relative.
 
 ### GitHub Pages (included workflow)
 
-The workflow [`.github/workflows/deploy-eminence-map.yml`](../.github/workflows/deploy-eminence-map.yml) publishes `eminence-planning-map/` on pushes to `main` (or **Actions → Deploy Eminence planning map → Run workflow**).
+The workflow [`.github/workflows/deploy-eminence-map.yml`](../.github/workflows/deploy-eminence-map.yml) publishes `eminence-planning-map/` to the `gh-pages` branch on pushes to `main` (or **Actions → Deploy Eminence planning map → Run workflow**).
 
-It enables GitHub Pages for **GitHub Actions** automatically on first run. If deploy still fails with a Pages permission error, open **Settings → Pages → Build and deployment → Source: GitHub Actions**, then re-run the workflow.
+**One-time setup** (required — Actions cannot enable Pages without admin rights):
+
+1. Open **Settings → Pages**
+2. **Build and deployment → Source:** Deploy from a branch
+3. **Branch:** `gh-pages` / **/ (root)** → Save
 
 Site URL:
 

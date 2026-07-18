@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -18,12 +18,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    name: Deploy static site
+  # Reliable path: publish the static site to the gh-pages branch.
+  # Enable once in Settings → Pages → Deploy from a branch → gh-pages / (root).
+  publish-branch:
+    name: Publish gh-pages branch
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Check out
         uses: actions/checkout@v4
@@ -37,46 +36,70 @@ jobs:
           test -f eminence-planning-map/data/city-boundary.geojson
           test -f eminence-planning-map/data/parcels.geojson
           test -f eminence-planning-map/.nojekyll
-          # Fail loudly if publish folder accidentally contains a JS build step dependency.
           test ! -e eminence-planning-map/package.json
 
-      - name: Ensure GitHub Pages (Actions) is enabled
-        uses: actions/github-script@v7
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          script: |
-            const { owner, repo } = context.repo;
-            try {
-              const { data } = await github.rest.repos.getPages({ owner, repo });
-              core.info(`Pages already enabled (build_type=${data.build_type || "unknown"})`);
-              if (data.build_type && data.build_type !== "workflow") {
-                await github.rest.repos.updateInformationAboutPagesSite({
-                  owner,
-                  repo,
-                  build_type: "workflow",
-                });
-                core.info("Updated Pages build_type to workflow");
-              }
-            } catch (err) {
-              if (err.status !== 404) throw err;
-              core.info("Pages not enabled yet; creating Pages site with Actions build");
-              await github.rest.repos.createPagesSite({
-                owner,
-                repo,
-                build_type: "workflow",
-              });
-              core.info("Created Pages site");
-            }
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./eminence-planning-map
+          force_orphan: true
+          user_name: github-actions[bot]
+          user_email: 41898282+github-actions[bot]@users.noreply.github.com
+
+      - name: Deployment notes
+        run: |
+          {
+            echo "## Eminence map publish"
+            echo ""
+            echo "Published \`eminence-planning-map/\` to the \`gh-pages\` branch."
+            echo ""
+            echo "### One-time GitHub Pages setup"
+            echo "1. Open **Settings → Pages**"
+            echo "2. Under **Build and deployment → Source**, choose **Deploy from a branch**"
+            echo "3. Branch: \`gh-pages\` / folder: \`/ (root)\`"
+            echo "4. Save — site will be at: https://awest813.github.io/maplibre-gl-js/"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Optional path once Pages is enabled for GitHub Actions.
+  deploy-actions-pages:
+    name: Deploy GitHub Actions Pages
+    needs: publish-branch
+    runs-on: ubuntu-latest
+    # Do not fail the workflow if Pages Actions is not enabled yet.
+    continue-on-error: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
 
       - name: Configure Pages
+        id: configure
+        continue-on-error: true
         uses: actions/configure-pages@v5
         with:
           enablement: true
 
       - name: Upload Pages artifact
+        if: steps.configure.outcome == 'success'
         uses: actions/upload-pages-artifact@v3
         with:
           path: eminence-planning-map
 
       - name: Deploy to GitHub Pages
+        if: steps.configure.outcome == 'success'
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Pages Actions unavailable
+        if: steps.configure.outcome != 'success'
+        run: |
+          {
+            echo "## GitHub Actions Pages not enabled yet"
+            echo ""
+            echo "The \`gh-pages\` branch publish still succeeded."
+            echo "To use Actions-based Pages later: **Settings → Pages → Source: GitHub Actions**."
+            echo "Or keep **Deploy from a branch → gh-pages** (recommended for this repo)."
+          } >> "$GITHUB_STEP_SUMMARY"
