@@ -1296,6 +1296,7 @@ map.on("load", async () => {
   });
   writeUrlState();
   setLoading(false, "Ready", 100);
+  resizeMapSoon();
 
   document.getElementById("share-btn").addEventListener("click", async () => {
     writeUrlState();
@@ -1468,11 +1469,22 @@ const toggle = document.getElementById("panel-toggle");
 const panelClose = document.getElementById("panel-close");
 const backdrop = document.getElementById("panel-backdrop");
 
+function resizeMapSoon() {
+  window.requestAnimationFrame(() => {
+    try {
+      map.resize();
+    } catch {
+      /* map may not be ready during early boot */
+    }
+  });
+}
+
 function setPanelOpen(open) {
   panel.classList.toggle("open", open);
   toggle.setAttribute("aria-expanded", String(open));
   toggle.textContent = open ? "Close" : "Layers";
   if (backdrop) backdrop.hidden = !open || !window.matchMedia("(max-width: 900px)").matches;
+  resizeMapSoon();
 }
 
 toggle.addEventListener("click", () => {
@@ -1489,7 +1501,9 @@ if (mobilePanelQuery.matches) {
 }
 mobilePanelQuery.addEventListener("change", (e) => {
   setPanelOpen(!e.matches);
+  resizeMapSoon();
 });
+window.addEventListener("resize", resizeMapSoon);
 
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
