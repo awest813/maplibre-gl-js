@@ -12,6 +12,14 @@ const HIDDEN_PROP_KEYS = new Set([
   "analysis",
   "public_ownership",
   "hint",
+  "FIPS",
+  "CITYFIPS",
+  "OBJECTID",
+  "GlobalID",
+  "SHAPE_Length",
+  "SHAPE_Area",
+  "Shape__Length",
+  "Shape__Area",
 ]);
 
 const PROP_LABELS = {
@@ -24,6 +32,7 @@ const PROP_LABELS = {
   zip: "ZIP",
   acres: "Acres",
   class: "Class",
+  CLASS: "Class",
   tax_district: "Tax district",
   fire_district: "Fire district",
   land_value: "Land value",
@@ -33,13 +42,19 @@ const PROP_LABELS = {
   description: "Description",
   year: "Year",
   name: "Name",
+  NAME: "Name",
   amenity: "Amenity",
   shop: "Shop",
   bridge_id: "Bridge ID",
   tract_id: "Census tract",
   pop_2020: "Population (2020)",
+  POP2010: "Population (2010)",
   near_school: "Near school",
   muni: "Municipality",
+  COUNTY: "County",
+  INCORP: "Incorporated",
+  LAST_UPDT: "Last updated",
+  Area_SqMiles: "Area (sq mi)",
 };
 
 const MONEY_KEYS = new Set([
@@ -70,8 +85,8 @@ const ZONING_COLORS = [
   "B1", "#90cdf4",
   "B2", "#63b3ed",
   "B3", "#4299e1",
-  "I1", "#c4b5fd",
-  "I2", "#a78bfa",
+  "I1", "#78716c",
+  "I2", "#57534e",
   "#9ca3af",
 ];
 
@@ -80,13 +95,30 @@ const LEGEND = [
   { label: "Parcels", color: "#78716c", kind: "line" },
   { label: "Residential districts", color: "#e9c46a", kind: "fill" },
   { label: "Business districts", color: "#63b3ed", kind: "fill" },
-  { label: "Industrial districts", color: "#a78bfa", kind: "fill" },
+  { label: "Industrial districts", color: "#57534e", kind: "fill" },
   { label: "Agricultural districts", color: "#8a9a6d", kind: "fill" },
   { label: "Buildings", color: "#6b5b4a", kind: "fill" },
   { label: "Flood hazard", color: "#c45c26", kind: "fill" },
   { label: "Public / exempt parcels", color: "#0f766e", kind: "fill" },
   { label: "Vacancy / sidewalk hints", color: "#b45309", kind: "dot" },
 ];
+
+/** Higher score = preferred when features overlap under the cursor. */
+function inspectPriority(styleId) {
+  if (!styleId) return 0;
+  if (styleId.startsWith("addresses") || styleId.startsWith("schools") || styleId.startsWith("bridges")) return 100;
+  if (styleId.startsWith("osm-") || styleId.startsWith("wwtp") || styleId.startsWith("water-tanks")) return 95;
+  if (styleId.startsWith("analysis-")) return 90;
+  if (styleId.startsWith("henry-landuse-zoning")) return 85;
+  if (styleId.startsWith("parcels")) return 80;
+  if (styleId.startsWith("buildings")) return 70;
+  if (styleId.startsWith("ww-") || styleId.startsWith("water-improvements")) return 65;
+  if (styleId.startsWith("flood") || styleId.startsWith("school-buffers")) return 40;
+  if (styleId.startsWith("roads") || styleId.startsWith("railroads") || styleId.startsWith("streams")) return 35;
+  if (styleId.startsWith("city-boundary")) return 8;
+  if (styleId.startsWith("henry-county")) return 4;
+  return 20;
+}
 
 const EMPTY_FC = { type: "FeatureCollection", features: [] };
 
@@ -149,9 +181,30 @@ function coerceNumber(value) {
   return null;
 }
 
+function titleCaseWords(text) {
+  return String(text)
+    .toLowerCase()
+    .replace(/\b([a-z])/g, (m) => m.toUpperCase());
+}
+
 function formatPropValue(key, value) {
   if (typeof value === "boolean") return value ? "Yes" : "No";
   const num = coerceNumber(value);
+  if (
+    num !== null &&
+    num > 1e11 &&
+    /date|updt|update|time/i.test(key)
+  ) {
+    const ms = num > 1e12 ? num : num * 1000;
+    const d = new Date(ms);
+    if (!Number.isNaN(d.getTime())) {
+      return d.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    }
+  }
   if (MONEY_KEYS.has(key) && num !== null) {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -159,12 +212,18 @@ function formatPropValue(key, value) {
       maximumFractionDigits: 0,
     }).format(num);
   }
-  if (key === "acres" && num !== null) return num.toFixed(2);
+  if ((key === "acres" || key === "Area_SqMiles") && num !== null) {
+    return num.toFixed(2);
+  }
   if (num !== null && !Number.isInteger(num)) {
     return num.toLocaleString("en-US", { maximumFractionDigits: 2 });
   }
   if (num !== null) return num.toLocaleString("en-US");
-  return String(value);
+  const text = String(value);
+  if (/^[A-Z0-9][A-Z0-9\s/&.-]{2,}$/.test(text) && /[A-Z]/.test(text) && text === text.toUpperCase()) {
+    return titleCaseWords(text);
+  }
+  return text;
 }
 
 function humanizeKey(key) {
@@ -1082,10 +1141,11 @@ function renderLayerControls(layers) {
 }
 
 function featureTitleFrom(props, fallback) {
-  return (
+  const raw =
     props?.district_name ||
     props?.district_code ||
     props?.name ||
+    props?.NAME ||
     props?.address ||
     props?.parcel_id ||
     props?.PROP_ADDR ||
@@ -1094,20 +1154,35 @@ function featureTitleFrom(props, fallback) {
     props?.shop ||
     props?.amenity ||
     fallback ||
-    "Feature"
-  );
+    "Feature";
+  const text = String(raw);
+  if (text === text.toUpperCase() && /[A-Z]/.test(text) && text.length > 2) {
+    return titleCaseWords(text);
+  }
+  return text;
 }
 
 function styleIdToLayer(styleId) {
   return catalog.layers.find((layer) => layer._styleIds?.includes(styleId));
 }
 
+function activeInspectLayers() {
+  return interactiveStyleIds.filter((id) => map.getLayer(id));
+}
+
+function bestInspectHit(point) {
+  const layers = activeInspectLayers();
+  if (!layers.length) return null;
+  const hits = map.queryRenderedFeatures(point, { layers });
+  if (!hits.length) return null;
+  hits.sort((a, b) => inspectPriority(b.layer?.id) - inspectPriority(a.layer?.id));
+  return hits[0];
+}
+
 function setupFeatureInspect() {
   map.on("click", (e) => {
     if (measuring) return;
-    if (!interactiveStyleIds.length) return;
-    const hits = map.queryRenderedFeatures(e.point, { layers: interactiveStyleIds.filter((id) => map.getLayer(id)) });
-    const f = hits[0];
+    const f = bestInspectHit(e.point);
     if (!f) {
       featureCard.hidden = true;
       return;
@@ -1116,14 +1191,21 @@ function setupFeatureInspect() {
     showFeature(featureTitleFrom(f.properties, layer?.name), f.properties, layer?.name || "");
   });
 
+  let hoverRaf = 0;
+  let lastHoverPoint = null;
   map.on("mousemove", (e) => {
     if (measuring) {
       map.getCanvas().style.cursor = "crosshair";
       return;
     }
-    if (!interactiveStyleIds.length) return;
-    const hits = map.queryRenderedFeatures(e.point, { layers: interactiveStyleIds.filter((id) => map.getLayer(id)) });
-    map.getCanvas().style.cursor = hits.length ? "pointer" : "";
+    lastHoverPoint = e.point;
+    if (hoverRaf) return;
+    hoverRaf = window.requestAnimationFrame(() => {
+      hoverRaf = 0;
+      if (!lastHoverPoint) return;
+      const hit = bestInspectHit(lastHoverPoint);
+      map.getCanvas().style.cursor = hit ? "pointer" : "";
+    });
   });
 }
 
@@ -1145,7 +1227,14 @@ function computeCityBounds(cityData) {
 
 function fitCityBounds(options = {}) {
   if (!cityBounds) return;
-  map.fitBounds(cityBounds, { padding: 48, duration: 1200, ...options });
+  const mobile = window.matchMedia("(max-width: 900px)").matches;
+  map.fitBounds(cityBounds, {
+    padding: mobile
+      ? { top: 150, bottom: 72, left: 28, right: 28 }
+      : { top: 110, bottom: 48, left: 48, right: 48 },
+    duration: 1200,
+    ...options,
+  });
 }
 
 function setToolStatus(message, { sticky = false } = {}) {
@@ -1189,9 +1278,15 @@ function runSearch(query) {
     resultsEl.innerHTML = "";
     return;
   }
-  const hits = searchIndex
-    .filter((item) => item.address.toLowerCase().includes(q))
-    .slice(0, 8);
+  const scored = [];
+  for (const item of searchIndex) {
+    const addr = item.address.toLowerCase();
+    if (!addr.includes(q)) continue;
+    const score = addr.startsWith(q) ? 0 : addr.split(/\s+/).some((w) => w.startsWith(q)) ? 1 : 2;
+    scored.push({ item, score });
+  }
+  scored.sort((a, b) => a.score - b.score || a.item.address.localeCompare(b.item.address));
+  const hits = scored.slice(0, 8).map((row) => row.item);
   if (!hits.length) {
     resultsEl.hidden = false;
     resultsEl.innerHTML = `<li><button type="button" disabled>No matches</button></li>`;
@@ -1298,6 +1393,7 @@ map.on("load", async () => {
   setLoading(false, "Ready", 100);
   resizeMapSoon();
 
+  let shareTimer = 0;
   document.getElementById("share-btn").addEventListener("click", async () => {
     writeUrlState();
     const status = document.getElementById("share-status");
@@ -1309,6 +1405,10 @@ map.on("load", async () => {
       status.hidden = false;
       status.textContent = "Copy the URL from the address bar.";
     }
+    window.clearTimeout(shareTimer);
+    shareTimer = window.setTimeout(() => {
+      status.hidden = true;
+    }, 3200);
   });
 
   document.getElementById("reset-view-btn")?.addEventListener("click", () => {
@@ -1364,6 +1464,8 @@ function setupMapTools() {
       "circle-stroke-color": "#f3eee4",
     },
   });
+  if (map.getLayer("measure-line")) map.moveLayer("measure-line");
+  if (map.getLayer("measure-points")) map.moveLayer("measure-points");
 
   function measureGeoJSON() {
     const features = measureCoords.map((c) => ({

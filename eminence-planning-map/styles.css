@@ -611,7 +611,7 @@ summary {
   place-items: center;
   background: rgba(243, 238, 228, 0.45);
   backdrop-filter: blur(2px);
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .loading[hidden] {
