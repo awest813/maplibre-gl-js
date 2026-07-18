@@ -45,6 +45,13 @@
         </section>
 
         <section class="panel-section">
+          <h2>Quick views</h2>
+          <div class="preset-list" id="preset-list"></div>
+          <button type="button" class="share-btn" id="share-btn">Copy share link</button>
+          <p class="hint" id="share-status" hidden></p>
+        </section>
+
+        <section class="panel-section">
           <h2>Basemap</h2>
           <div class="basemap-list" id="basemap-list"></div>
         </section>
@@ -66,8 +73,14 @@
         </section>
 
         <section class="panel-section">
+          <h2>Places (OpenStreetMap)</h2>
+          <p class="hint">Community-mapped. Sidewalk coverage in Eminence is sparse—useful as a gap signal.</p>
+          <div class="layer-list" id="layers-places"></div>
+        </section>
+
+        <section class="panel-section">
           <h2>Free-data analysis</h2>
-          <p class="hint">Heuristics from addresses + buildings. Not official vacant or condemned lists.</p>
+          <p class="hint">Heuristics only—not official vacant, condemned, or sidewalk inventories.</p>
           <div class="layer-list" id="layers-analysis"></div>
         </section>
 

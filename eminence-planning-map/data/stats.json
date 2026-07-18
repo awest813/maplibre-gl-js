@@ -14,5 +14,9 @@
       1789
     ]
   ],
-  "notes": "Vacancy hints are heuristics from free public GIS, not official condemned/vacant lists."
+  "notes": "Vacancy hints are heuristics from free public GIS, not official condemned/vacant lists.",
+  "osm_amenities": 12,
+  "osm_shops": 7,
+  "missing_sidewalk_hints": 159,
+  "mapped_sidewalk_ways": 2
 }

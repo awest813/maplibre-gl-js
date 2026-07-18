@@ -2,10 +2,42 @@
   "title": "Eminence Planning and Zoning Explorer",
   "subtitle": "Unofficial public planning tool",
   "contactEmail": "awest40709@ucumberlands.edu",
-  "disclaimer": "This map uses free, publicly accessible GIS data only. It is an unofficial planning tool—not a substitute for Henry County zoning maps, PVA parcels, or legal determinations. Analysis layers are heuristics, not official vacancy lists.",
+  "disclaimer": "This map uses free, publicly accessible GIS data only (Kentucky GIS + OpenStreetMap). It is an unofficial planning tool—not a substitute for Henry County zoning maps, PVA parcels, or legal determinations. Analysis layers are heuristics, not official vacancy or sidewalk inventories.",
   "center": [-85.1805, 38.3645],
   "zoom": 13.2,
   "bounds": [-85.21, 38.34, -85.14, 38.39],
+  "presets": [
+    {
+      "id": "overview",
+      "name": "Overview",
+      "basemap": "osm",
+      "layers": ["city-boundary", "roads", "buildings", "streams", "waterbodies", "railroads", "schools"]
+    },
+    {
+      "id": "walkability",
+      "name": "Walkability",
+      "basemap": "osm",
+      "layers": ["city-boundary", "roads", "schools", "school-buffers", "osm-sidewalks", "osm-parks", "analysis-missing-sidewalks"]
+    },
+    {
+      "id": "vacancy",
+      "name": "Vacancy hints",
+      "basemap": "ky-naip-2022",
+      "layers": ["city-boundary", "roads", "buildings", "analysis-unbuilt-addresses", "analysis-unaddressed-buildings"]
+    },
+    {
+      "id": "utilities",
+      "name": "Utilities",
+      "basemap": "osm",
+      "layers": ["city-boundary", "roads", "wwtp", "ww-improvements", "water-tanks", "water-improvements", "flood-hazards"]
+    },
+    {
+      "id": "places",
+      "name": "Places & parking",
+      "basemap": "osm",
+      "layers": ["city-boundary", "roads", "buildings", "osm-amenities", "osm-shops", "osm-parking", "osm-parks"]
+    }
+  ],
   "basemaps": [
     {
       "id": "osm",
@@ -263,6 +295,74 @@
       "updated": "2026-07-18",
       "verification_status": "estimated",
       "notes": "Heuristic: buildings ≥800 sqft with no address within ~55m. May include accessory structures."
+    },
+    {
+      "id": "analysis-missing-sidewalks",
+      "name": "Possible missing sidewalks",
+      "group": "analysis",
+      "path": "data/analysis-missing-sidewalks.geojson",
+      "defaultVisible": false,
+      "source": "Derived from KY roads + OSM sidewalks",
+      "sourceUrl": "https://www.openstreetmap.org/copyright",
+      "updated": "2026-07-18",
+      "verification_status": "estimated",
+      "notes": "Heuristic: main/school-area roads with no OSM sidewalk/footway nearby. OSM sidewalk mapping in Eminence is sparse."
+    },
+    {
+      "id": "osm-sidewalks",
+      "name": "Mapped sidewalks / paths (OSM)",
+      "group": "places",
+      "path": "data/osm-sidewalks.geojson",
+      "defaultVisible": false,
+      "source": "OpenStreetMap footways / cycleways",
+      "sourceUrl": "https://www.openstreetmap.org/copyright",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis",
+      "notes": "Community-mapped; coverage is incomplete."
+    },
+    {
+      "id": "osm-parks",
+      "name": "Parks & recreation (OSM)",
+      "group": "places",
+      "path": "data/osm-parks.geojson",
+      "defaultVisible": false,
+      "source": "OpenStreetMap",
+      "sourceUrl": "https://www.openstreetmap.org/copyright",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "osm-parking",
+      "name": "Parking (OSM)",
+      "group": "places",
+      "path": "data/osm-parking.geojson",
+      "defaultVisible": false,
+      "source": "OpenStreetMap",
+      "sourceUrl": "https://www.openstreetmap.org/copyright",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "osm-amenities",
+      "name": "Civic & food amenities (OSM)",
+      "group": "places",
+      "path": "data/osm-amenities.geojson",
+      "defaultVisible": false,
+      "source": "OpenStreetMap",
+      "sourceUrl": "https://www.openstreetmap.org/copyright",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "osm-shops",
+      "name": "Shops (OSM)",
+      "group": "places",
+      "path": "data/osm-shops.geojson",
+      "defaultVisible": false,
+      "source": "OpenStreetMap",
+      "sourceUrl": "https://www.openstreetmap.org/copyright",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
     }
   ]
 }

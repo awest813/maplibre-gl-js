@@ -7,6 +7,7 @@ const GROUP_TARGETS = {
   base: "layers-base",
   community: "layers-community",
   utilities: "layers-utilities",
+  places: "layers-places",
   analysis: "layers-analysis",
 };
 
@@ -19,7 +20,9 @@ const LEGEND = [
   { label: "Flood hazard", color: "#c45c26", kind: "fill" },
   { label: "Schools", color: "#2f4a32", kind: "dot" },
   { label: "Utilities", color: "#3d6f7a", kind: "dot" },
-  { label: "Vacancy hints", color: "#b45309", kind: "dot" },
+  { label: "OSM places", color: "#7c3aed", kind: "dot" },
+  { label: "Mapped paths", color: "#15803d", kind: "line" },
+  { label: "Vacancy / sidewalk hints", color: "#b45309", kind: "dot" },
 ];
 
 const EMPTY_FC = { type: "FeatureCollection", features: [] };
@@ -409,6 +412,88 @@ function addLayerStyles(layer) {
     return fillLine(id, "#b45309", "#9a3412", 0.45);
   }
 
+  if (id === "analysis-missing-sidewalks") {
+    map.addLayer({
+      id: `${id}-line`,
+      type: "line",
+      source: id,
+      paint: {
+        "line-color": "#b45309",
+        "line-width": 3,
+        "line-opacity": 0.85,
+      },
+    });
+    return [`${id}-line`];
+  }
+
+  if (id === "osm-sidewalks") {
+    map.addLayer({
+      id: `${id}-line`,
+      type: "line",
+      source: id,
+      paint: {
+        "line-color": "#15803d",
+        "line-width": 3,
+        "line-opacity": 0.9,
+      },
+    });
+    return [`${id}-line`];
+  }
+
+  if (id === "osm-parks") {
+    map.addLayer({
+      id: `${id}-fill`,
+      type: "fill",
+      source: id,
+      filter: ["in", ["geometry-type"], ["literal", ["Polygon", "MultiPolygon"]]],
+      paint: { "fill-color": "#4ade80", "fill-opacity": 0.35 },
+    });
+    map.addLayer({
+      id: `${id}-circle`,
+      type: "circle",
+      source: id,
+      filter: ["==", ["geometry-type"], "Point"],
+      paint: {
+        "circle-radius": 6,
+        "circle-color": "#16a34a",
+        "circle-stroke-width": 1.5,
+        "circle-stroke-color": "#f3eee4",
+      },
+    });
+    return [`${id}-fill`, `${id}-circle`];
+  }
+
+  if (id === "osm-parking") {
+    map.addLayer({
+      id: `${id}-fill`,
+      type: "fill",
+      source: id,
+      filter: ["in", ["geometry-type"], ["literal", ["Polygon", "MultiPolygon"]]],
+      paint: { "fill-color": "#64748b", "fill-opacity": 0.35 },
+    });
+    map.addLayer({
+      id: `${id}-circle`,
+      type: "circle",
+      source: id,
+      filter: ["==", ["geometry-type"], "Point"],
+      paint: {
+        "circle-radius": 5,
+        "circle-color": "#475569",
+        "circle-stroke-width": 1.2,
+        "circle-stroke-color": "#f3eee4",
+      },
+    });
+    return [`${id}-fill`, `${id}-circle`];
+  }
+
+  if (id === "osm-amenities") {
+    return pointStyle(id, "#7c3aed", 6);
+  }
+
+  if (id === "osm-shops") {
+    return pointStyle(id, "#db2777", 5);
+  }
+
   map.addLayer({
     id: `${id}-line`,
     type: "line",
@@ -435,9 +520,9 @@ function renderStats() {
     [stats.buildings, "Buildings"],
     [stats.addresses, "Addresses"],
     [stats.schools, "Schools"],
-    [stats.roads, "Street segments"],
+    [stats.osm_amenities ?? 0, "OSM amenities"],
     [stats.unbuilt_addresses, "Unbuilt address hints"],
-    [stats.unaddressed_buildings, "Unaddressed building hints"],
+    [stats.missing_sidewalk_hints ?? 0, "Missing sidewalk hints"],
   ];
   el.innerHTML = items
     .map(
@@ -459,6 +544,22 @@ function renderLegend() {
   }).join("");
 }
 
+function currentBasemapId() {
+  const checked = document.querySelector('input[name="basemap"]:checked');
+  return checked?.value || defaultBasemap;
+}
+
+function setBasemap(basemapId) {
+  for (const bm of catalog.basemaps || []) {
+    const styleId = `basemap-${bm.id}`;
+    if (map.getLayer(styleId)) {
+      map.setLayoutProperty(styleId, "visibility", bm.id === basemapId ? "visible" : "none");
+    }
+  }
+  const radio = document.querySelector(`input[name="basemap"][value="${basemapId}"]`);
+  if (radio) radio.checked = true;
+}
+
 function renderBasemapControls() {
   const el = document.getElementById("basemap-list");
   el.innerHTML = "";
@@ -474,14 +575,79 @@ function renderBasemapControls() {
   el.querySelectorAll('input[name="basemap"]').forEach((input) => {
     input.addEventListener("change", () => {
       if (!input.checked) return;
-      for (const bm of catalog.basemaps) {
-        const styleId = `basemap-${bm.id}`;
-        if (map.getLayer(styleId)) {
-          map.setLayoutProperty(styleId, "visibility", bm.id === input.value ? "visible" : "none");
-        }
-      }
+      setBasemap(input.value);
+      writeUrlState();
     });
   });
+}
+
+function applyPreset(preset) {
+  const enabled = new Set(preset.layers || []);
+  for (const layer of catalog.layers) {
+    const on = enabled.has(layer.id);
+    const checkbox = document.querySelector(`input[data-layer="${layer.id}"]`);
+    if (checkbox) checkbox.checked = on;
+    if (layer._styleIds) setLayerVisibility(layer._styleIds, on);
+  }
+  if (preset.basemap) setBasemap(preset.basemap);
+  writeUrlState();
+}
+
+function renderPresets() {
+  const el = document.getElementById("preset-list");
+  el.innerHTML = "";
+  for (const preset of catalog.presets || []) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "preset-btn";
+    btn.textContent = preset.name;
+    btn.addEventListener("click", () => applyPreset(preset));
+    el.appendChild(btn);
+  }
+}
+
+function readUrlState() {
+  const hash = location.hash.replace(/^#/, "");
+  if (!hash) return null;
+  try {
+    return Object.fromEntries(new URLSearchParams(hash));
+  } catch {
+    return null;
+  }
+}
+
+function writeUrlState() {
+  const center = map.getCenter();
+  const params = new URLSearchParams();
+  params.set("z", map.getZoom().toFixed(2));
+  params.set("lng", center.lng.toFixed(5));
+  params.set("lat", center.lat.toFixed(5));
+  params.set("basemap", currentBasemapId());
+  const on = catalog.layers
+    .filter((l) => document.querySelector(`input[data-layer="${l.id}"]`)?.checked)
+    .map((l) => l.id);
+  if (on.length) params.set("layers", on.join(","));
+  history.replaceState(null, "", `#${params.toString()}`);
+}
+
+function applyUrlState(state) {
+  if (!state) return;
+  if (state.basemap) setBasemap(state.basemap);
+  if (state.layers) {
+    const enabled = new Set(state.layers.split(",").filter(Boolean));
+    for (const layer of catalog.layers) {
+      const on = enabled.has(layer.id);
+      const checkbox = document.querySelector(`input[data-layer="${layer.id}"]`);
+      if (checkbox) checkbox.checked = on;
+      if (layer._styleIds) setLayerVisibility(layer._styleIds, on);
+    }
+  }
+  const z = Number(state.z);
+  const lng = Number(state.lng);
+  const lat = Number(state.lat);
+  if (Number.isFinite(z) && Number.isFinite(lng) && Number.isFinite(lat)) {
+    map.jumpTo({ center: [lng, lat], zoom: z });
+  }
 }
 
 function renderLayerControls(layers) {
@@ -506,7 +672,8 @@ function renderLayerControls(layers) {
         <span class="layer-meta">${VERIFY_LABELS[layer.verification_status] || "Public GIS"}</span>
       </label>
     `;
-    document.getElementById(targetId).appendChild(row);
+    const target = document.getElementById(targetId);
+    if (target) target.appendChild(row);
 
     const li = document.createElement("li");
     const date = layer.updated ? ` · Updated ${layer.updated}` : "";
@@ -571,9 +738,11 @@ function flyToAddress(item) {
 }
 
 map.on("load", async () => {
+  const urlState = readUrlState();
   renderStats();
   renderLegend();
   renderBasemapControls();
+  renderPresets();
   renderLayerControls(catalog.layers);
 
   for (const layer of catalog.layers) {
@@ -596,6 +765,8 @@ map.on("load", async () => {
           f.properties?.PROP_ADDR ||
           f.properties?.bridge_id ||
           f.properties?.tract_id ||
+          f.properties?.shop ||
+          f.properties?.amenity ||
           layer.name;
         showFeature(title, f.properties);
       });
@@ -613,23 +784,44 @@ map.on("load", async () => {
       const layer = catalog.layers.find((l) => l.id === input.dataset.layer);
       if (!layer?._styleIds) return;
       setLayerVisibility(layer._styleIds, input.checked);
+      writeUrlState();
     });
   });
 
-  const city = await loadGeoJSON("data/city-boundary.geojson");
-  if (city.features?.[0]) {
-    const coords = [];
-    const walk = (c) => {
-      if (typeof c[0] === "number") coords.push(c);
-      else c.forEach(walk);
-    };
-    walk(city.features[0].geometry.coordinates);
-    const bounds = coords.reduce(
-      (b, c) => b.extend(c),
-      new maplibregl.LngLatBounds(coords[0], coords[0])
-    );
-    map.fitBounds(bounds, { padding: 48, duration: 1200 });
+  if (urlState?.layers || urlState?.basemap || urlState?.z) {
+    applyUrlState(urlState);
+  } else {
+    const city = await loadGeoJSON("data/city-boundary.geojson");
+    if (city.features?.[0]) {
+      const coords = [];
+      const walk = (c) => {
+        if (typeof c[0] === "number") coords.push(c);
+        else c.forEach(walk);
+      };
+      walk(city.features[0].geometry.coordinates);
+      const bounds = coords.reduce(
+        (b, c) => b.extend(c),
+        new maplibregl.LngLatBounds(coords[0], coords[0])
+      );
+      map.fitBounds(bounds, { padding: 48, duration: 1200 });
+    }
   }
+
+  map.on("moveend", () => writeUrlState());
+  writeUrlState();
+
+  document.getElementById("share-btn").addEventListener("click", async () => {
+    writeUrlState();
+    const status = document.getElementById("share-status");
+    try {
+      await navigator.clipboard.writeText(location.href);
+      status.hidden = false;
+      status.textContent = "Share link copied.";
+    } catch {
+      status.hidden = false;
+      status.textContent = "Copy the URL from the address bar.";
+    }
+  });
 });
 
 const panel = document.getElementById("side-panel");

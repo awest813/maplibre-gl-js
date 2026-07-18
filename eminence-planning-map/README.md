@@ -18,25 +18,27 @@ Open http://localhost:8080/
 **Base:** Henry County, city limits, streets, addresses, buildings, streams, waterbodies, flood hazards  
 **Community:** railroads, bridges, schools, walking buffers, school districts, fire response areas, census tracts  
 **Utilities:** wastewater plant, wastewater projects, water tanks, water projects (generalized—not pipe networks)  
-**Analysis:** addresses without nearby buildings; larger buildings without nearby addresses  
+**Places (OSM):** sidewalks/paths, parks, parking, civic/food amenities, shops  
+**Analysis:** unbuilt-address hints; unaddressed-building hints; possible missing sidewalks  
 
 **Basemaps:** OpenStreetMap · Kentucky NAIP 2022 aerial tiles
 
 ## Features
 
-- Layer toggles by group, with source and update dates
+- Quick-view presets (Overview, Walkability, Vacancy hints, Utilities, Places)
+- Shareable URL hash (center, zoom, basemap, visible layers)
 - Address search
-- At-a-glance counts from `data/stats.json`
-- Legend and feature inspector
+- Stats, legend, feature inspector
 - Correction form (`contactEmail` in `layers.json`)
 
 ## Refresh free data
 
 ```bash
 python3 scripts/fetch-ky-gis.py
+python3 scripts/fetch-osm.py
 ```
 
-Rebuilds GeoJSON extracts and derived vacancy heuristics.
+Rebuilds Kentucky GIS extracts, OSM places, and derived heuristics.
 
 ## Not included (yet)
 

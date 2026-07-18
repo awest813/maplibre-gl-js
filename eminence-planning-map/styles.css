@@ -313,6 +313,42 @@ body {
   gap: 0.55rem;
 }
 
+.preset-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.7rem;
+}
+
+.preset-btn,
+.share-btn {
+  border: 1px solid rgba(47, 74, 50, 0.25);
+  border-radius: 8px;
+  background: rgba(47, 74, 50, 0.08);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.45rem 0.7rem;
+  cursor: pointer;
+}
+
+.preset-btn:hover,
+.share-btn:hover {
+  background: rgba(47, 74, 50, 0.14);
+}
+
+.share-btn {
+  width: 100%;
+  background: var(--field);
+  color: var(--paper);
+  border-color: transparent;
+}
+
+.share-btn:hover {
+  background: #243a28;
+}
+
 .stat-card {
   padding: 0.55rem 0.65rem;
   border-radius: 8px;
