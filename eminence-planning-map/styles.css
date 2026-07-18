@@ -338,6 +338,62 @@ body {
   background: rgba(47, 74, 50, 0.14);
 }
 
+.preset-btn.active {
+  background: var(--field);
+  color: var(--paper);
+  border-color: transparent;
+}
+
+.loading {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  background: rgba(243, 238, 228, 0.55);
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+}
+
+.loading[hidden] {
+  display: none;
+}
+
+.loading-card {
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  background: rgba(255, 253, 248, 0.96);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  animation: rise-in 400ms ease-out both;
+}
+
+.loading-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--field);
+}
+
+.loading-detail {
+  margin: 0.3rem 0 0;
+  font-size: 0.8rem;
+  color: rgba(28, 36, 24, 0.65);
+}
+
+.panel-backdrop {
+  display: none;
+}
+
+.feature-note {
+  margin: 0.65rem 0 0;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: rgba(28, 36, 24, 0.7);
+}
+
 .share-btn {
   width: 100%;
   background: var(--field);
@@ -584,6 +640,20 @@ body {
 
   .stage {
     grid-template-columns: 1fr;
+  }
+
+  .panel-backdrop {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border: 0;
+    background: rgba(28, 36, 24, 0.28);
+    cursor: pointer;
+  }
+
+  .panel-backdrop[hidden] {
+    display: none;
   }
 
   .side-panel {

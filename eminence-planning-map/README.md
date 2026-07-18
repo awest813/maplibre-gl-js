@@ -28,8 +28,8 @@ Open http://localhost:8080/
 
 - Quick-view presets (Overview, Zoning districts, Walkability, Vacancy hints, Public land, Utilities, Places)
 - Shareable URL hash (center, zoom, basemap, visible layers)
-- Address search
-- Stats, legend, feature inspector
+- Address search, loading state, Escape-to-close panel/details
+- Stats, legend, readable feature inspector (currency/acres formatting)
 - Correction form (`contactEmail` in `layers.json`)
 
 ## Refresh free data

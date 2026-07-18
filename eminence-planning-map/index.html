@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Eminence Planning and Zoning Explorer</title>
-  <meta name="description" content="Unofficial public planning tool for Eminence, Kentucky — free Kentucky GIS layers for city limits, streets, buildings, schools, utilities, and more." />
+  <meta name="description" content="Unofficial public planning tool for Eminence, Kentucky — free parcels, zoning/land-use districts, buildings, schools, and planning analysis." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Sora:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -32,6 +32,13 @@
 
     <main class="stage">
       <div id="map" role="application" aria-label="Eminence planning map"></div>
+      <div class="loading" id="loading" role="status" aria-live="polite">
+        <div class="loading-card">
+          <p class="loading-title">Loading Eminence map…</p>
+          <p class="loading-detail" id="loading-detail">Fetching free public layers</p>
+        </div>
+      </div>
+      <button type="button" class="panel-backdrop" id="panel-backdrop" aria-label="Close layers panel" hidden></button>
 
       <aside class="side-panel" id="side-panel" aria-label="Map controls and information">
         <section class="panel-section">
@@ -48,7 +55,7 @@
           <h2>Quick views</h2>
           <div class="preset-list" id="preset-list"></div>
           <button type="button" class="share-btn" id="share-btn">Copy share link</button>
-          <p class="hint" id="share-status" hidden></p>
+          <p class="hint" id="share-status" hidden aria-live="polite"></p>
         </section>
 
         <section class="panel-section">

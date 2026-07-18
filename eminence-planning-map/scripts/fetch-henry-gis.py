@@ -80,6 +80,31 @@ def query_all(url: str, fields: str, order_field: str, page: int = 1000) -> dict
     return {"type": "FeatureCollection", "features": feats}
 
 
+
+def simplify_ring(ring, step=3):
+    if len(ring) <= 4:
+        return ring
+    kept = ring[::step]
+    if kept[0] != ring[0]:
+        kept = [ring[0]] + kept
+    if kept[-1] != ring[-1]:
+        kept.append(ring[-1])
+    if kept[0] != kept[-1]:
+        kept.append(kept[0])
+    return kept if len(kept) >= 4 else ring
+
+
+def simplify_geom(geom, step=3):
+    t = geom["type"]
+    if t == "Polygon":
+        return {"type": t, "coordinates": [simplify_ring(r, step) for r in geom["coordinates"]]}
+    if t == "MultiPolygon":
+        return {
+            "type": t,
+            "coordinates": [[simplify_ring(r, step) for r in poly] for poly in geom["coordinates"]],
+        }
+    return geom
+
 def write(name: str, fc: dict) -> None:
     path = DATA / name
     path.write_text(json.dumps(fc, separators=(",", ":")))
@@ -206,6 +231,11 @@ def main() -> None:
             }.items()
             if v not in (None, "")
         }
+    for feat in parcels["features"]:
+        feat["geometry"] = simplify_geom(feat["geometry"], 3)
+        z = str((feat.get("properties") or {}).get("zip") or "")
+        if z.endswith("-"):
+            feat["properties"]["zip"] = z.rstrip("-")
     write("parcels.geojson", parcels)
 
     derive_parcel_analysis(parcels)

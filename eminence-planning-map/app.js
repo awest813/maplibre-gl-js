@@ -2,7 +2,52 @@ const VERIFY_LABELS = {
   verified_state_gis: "Public GIS",
   estimated: "Heuristic / estimated",
   public_arcgis_unverified_currency: "Public ArcGIS — confirm currency",
+  community_mapped: "Community-mapped (OSM)",
 };
+
+const HIDDEN_PROP_KEYS = new Set([
+  "source_layer",
+  "layer_note",
+  "verification_status",
+  "analysis",
+  "public_ownership",
+  "hint",
+]);
+
+const PROP_LABELS = {
+  district_code: "District",
+  district_name: "District name",
+  parcel_id: "Parcel ID",
+  pidn: "PIDN",
+  address: "Address",
+  city: "City",
+  zip: "ZIP",
+  acres: "Acres",
+  class: "Class",
+  tax_district: "Tax district",
+  fire_district: "Fire district",
+  land_value: "Land value",
+  improvement_value: "Improvement value",
+  taxable: "Taxable value",
+  fair_cash: "Fair cash value",
+  description: "Description",
+  year: "Year",
+  name: "Name",
+  amenity: "Amenity",
+  shop: "Shop",
+  bridge_id: "Bridge ID",
+  tract_id: "Census tract",
+  pop_2020: "Population (2020)",
+  near_school: "Near school",
+  muni: "Municipality",
+};
+
+const MONEY_KEYS = new Set([
+  "land_value",
+  "improvement_value",
+  "taxable",
+  "fair_cash",
+]);
 
 const GROUP_TARGETS = {
   base: "layers-base",
@@ -51,6 +96,44 @@ const stats = await fetch("data/stats.json")
   .catch(() => null);
 
 document.getElementById("disclaimer-text").textContent = catalog.disclaimer;
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function formatPropValue(key, value) {
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (MONEY_KEYS.has(key) && typeof value === "number") {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 0,
+    }).format(value);
+  }
+  if (key === "acres" && typeof value === "number") return value.toFixed(2);
+  if (typeof value === "number" && Number.isFinite(value) && !Number.isInteger(value)) {
+    return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  }
+  if (typeof value === "number") return value.toLocaleString("en-US");
+  return String(value);
+}
+
+function humanizeKey(key) {
+  return PROP_LABELS[key] || key.replaceAll("_", " ");
+}
+
+function setLoading(visible, detail) {
+  const el = document.getElementById("loading");
+  const detailEl = document.getElementById("loading-detail");
+  if (!el) return;
+  el.hidden = !visible;
+  if (detail && detailEl) detailEl.textContent = detail;
+}
 
 function buildStyle(basemapId) {
   const basemaps = catalog.basemaps || [];
@@ -125,23 +208,39 @@ document.getElementById("feature-close").addEventListener("click", () => {
 function showFeature(title, props) {
   featureTitle.textContent = title;
   featureAttrs.innerHTML = "";
+  const notes = [];
+  if (props?.hint) notes.push(String(props.hint));
+  if (props?.layer_note) notes.push(String(props.layer_note));
+
   const entries = Object.entries(props || {}).filter(
-    ([, v]) => v !== null && v !== undefined && v !== ""
+    ([key, v]) =>
+      !HIDDEN_PROP_KEYS.has(key) && v !== null && v !== undefined && v !== ""
   );
-  if (!entries.length) {
+  if (!entries.length && !notes.length) {
     const div = document.createElement("div");
-    div.innerHTML = "<dt>Info</dt><dd>No attributes</dd>";
+    const dt = document.createElement("dt");
+    const dd = document.createElement("dd");
+    dt.textContent = "Info";
+    dd.textContent = "No attributes";
+    div.append(dt, dd);
     featureAttrs.appendChild(div);
   } else {
-    for (const [key, value] of entries.slice(0, 14)) {
+    for (const [key, value] of entries.slice(0, 12)) {
       const div = document.createElement("div");
       const dt = document.createElement("dt");
       const dd = document.createElement("dd");
-      dt.textContent = key;
-      dd.textContent = String(value);
+      dt.textContent = humanizeKey(key);
+      dd.textContent = formatPropValue(key, value);
       div.append(dt, dd);
       featureAttrs.appendChild(div);
     }
+  }
+
+  if (notes.length) {
+    const note = document.createElement("p");
+    note.className = "feature-note";
+    note.textContent = notes.join(" ");
+    featureAttrs.appendChild(note);
   }
   featureCard.hidden = false;
 }
@@ -671,6 +770,9 @@ function applyPreset(preset) {
     if (layer._styleIds) setLayerVisibility(layer._styleIds, on);
   }
   if (preset.basemap) setBasemap(preset.basemap);
+  document.querySelectorAll(".preset-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.preset === preset.id);
+  });
   writeUrlState();
 }
 
@@ -681,9 +783,81 @@ function renderPresets() {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "preset-btn";
+    btn.dataset.preset = preset.id;
     btn.textContent = preset.name;
     btn.addEventListener("click", () => applyPreset(preset));
     el.appendChild(btn);
+  }
+}
+
+function restackLayers() {
+  // Keep fills under buildings/roads; keep labels/points on top.
+  const underBuildings = [
+    "henry-county-fill",
+    "henry-county-line",
+    "flood-hazards-fill",
+    "flood-hazards-line",
+    "school-districts-fill",
+    "school-districts-line",
+    "fire-districts-fill",
+    "fire-districts-line",
+    "census-tracts-fill",
+    "census-tracts-line",
+    "school-buffers-fill",
+    "school-buffers-line",
+    "henry-landuse-zoning-fill",
+    "henry-landuse-zoning-line",
+    "parcels-fill",
+    "parcels-line",
+    "analysis-public-exempt-parcels-fill",
+    "analysis-public-exempt-parcels-line",
+    "analysis-zero-improvement-parcels-fill",
+    "analysis-zero-improvement-parcels-line",
+    "analysis-unaddressed-buildings-fill",
+    "analysis-unaddressed-buildings-line",
+    "waterbodies-fill",
+    "streams-line",
+  ];
+  const aboveBuildings = [
+    "buildings-fill",
+    "buildings-line",
+    "roads-local",
+    "roads-state",
+    "railroads-line",
+    "analysis-missing-sidewalks-line",
+    "osm-sidewalks-line",
+    "osm-parks-fill",
+    "osm-parking-fill",
+    "addresses-circle",
+    "bridges-circle",
+    "schools-circle",
+    "wwtp-circle",
+    "water-tanks-circle",
+    "ww-improvements-circle",
+    "ww-improvements-line",
+    "ww-improvements-fill",
+    "water-improvements-circle",
+    "water-improvements-line",
+    "water-improvements-fill",
+    "osm-amenities-circle",
+    "osm-shops-circle",
+    "osm-parks-circle",
+    "osm-parking-circle",
+    "analysis-unbuilt-addresses-circle",
+    "city-boundary-fill",
+    "city-boundary-line",
+    "henry-landuse-zoning-label",
+    "roads-label",
+    "schools-label",
+  ];
+
+  for (const id of underBuildings) {
+    if (map.getLayer(id) && map.getLayer("buildings-fill")) {
+      map.moveLayer(id, "buildings-fill");
+    }
+  }
+  for (const id of aboveBuildings) {
+    if (map.getLayer(id)) map.moveLayer(id);
   }
 }
 
@@ -742,24 +916,24 @@ function renderLayerControls(layers) {
     const targetId = GROUP_TARGETS[layer.group] || "layers-base";
     const row = document.createElement("div");
     row.className = "layer-row";
-    const status =
-      layer.verification_status === "estimated"
-        ? "estimated"
-        : layer.verification_status === "public_arcgis_unverified_currency"
-          ? "partial"
-          : "ready";
-    const statusLabel =
-      status === "estimated"
-        ? "Heuristic"
-        : status === "partial"
-          ? "Confirm currency"
-          : "Free data";
+    let status = "ready";
+    let statusLabel = "Free data";
+    if (layer.verification_status === "estimated") {
+      status = "estimated";
+      statusLabel = "Heuristic";
+    } else if (layer.verification_status === "public_arcgis_unverified_currency") {
+      status = "partial";
+      statusLabel = "Confirm currency";
+    } else if (layer.verification_status === "community_mapped") {
+      status = "partial";
+      statusLabel = "OSM";
+    }
     row.innerHTML = `
       <label>
         <input type="checkbox" data-layer="${layer.id}" ${layer.defaultVisible ? "checked" : ""} />
-        <span class="layer-name">${layer.name}</span>
+        <span class="layer-name">${escapeHtml(layer.name)}</span>
         <span class="status ${status}">${statusLabel}</span>
-        <span class="layer-meta">${VERIFY_LABELS[layer.verification_status] || "Public GIS"}</span>
+        <span class="layer-meta">${escapeHtml(VERIFY_LABELS[layer.verification_status] || "Public GIS")}</span>
       </label>
     `;
     const target = document.getElementById(targetId);
@@ -767,9 +941,9 @@ function renderLayerControls(layers) {
 
     const li = document.createElement("li");
     const date = layer.updated ? ` · Updated ${layer.updated}` : "";
-    li.innerHTML = `<strong>${layer.name}</strong><br />
-      <a href="${layer.sourceUrl}" target="_blank" rel="noopener noreferrer">${layer.source}</a>${date}
-      ${layer.notes ? `<br /><span>${layer.notes}</span>` : ""}`;
+    li.innerHTML = `<strong>${escapeHtml(layer.name)}</strong><br />
+      <a href="${escapeHtml(layer.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(layer.source)}</a>${escapeHtml(date)}
+      ${layer.notes ? `<br /><span>${escapeHtml(layer.notes)}</span>` : ""}`;
     sourceEl.appendChild(li);
   }
 }
@@ -802,10 +976,10 @@ function runSearch(query) {
   }
   resultsEl.hidden = false;
   resultsEl.innerHTML = hits
-    .map(
-      (item, i) =>
-        `<li><button type="button" data-idx="${i}">${item.address}${item.muni ? ` · ${item.muni}` : ""}</button></li>`
-    )
+    .map((item, i) => {
+      const label = escapeHtml(item.address) + (item.muni ? ` · ${escapeHtml(item.muni)}` : "");
+      return `<li><button type="button" data-idx="${i}">${label}</button></li>`;
+    })
     .join("");
   resultsEl.querySelectorAll("button[data-idx]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -829,14 +1003,22 @@ function flyToAddress(item) {
 
 map.on("load", async () => {
   const urlState = readUrlState();
+  setLoading(true, "Fetching free public layers…");
   renderStats();
   renderLegend();
   renderBasemapControls();
   renderPresets();
   renderLayerControls(catalog.layers);
 
-  for (const layer of catalog.layers) {
-    const data = await loadGeoJSON(layer.path);
+  setLoading(true, `Loading ${catalog.layers.length} layers…`);
+  const loaded = await Promise.all(
+    catalog.layers.map(async (layer) => {
+      const data = await loadGeoJSON(layer.path);
+      return { layer, data };
+    })
+  );
+
+  for (const { layer, data } of loaded) {
     map.addSource(layer.id, { type: "geojson", data });
     const styleIds = addLayerStyles(layer);
     layer._styleIds = styleIds;
@@ -872,11 +1054,14 @@ map.on("load", async () => {
     }
   }
 
+  restackLayers();
+
   document.querySelectorAll("input[data-layer]").forEach((input) => {
     input.addEventListener("change", () => {
       const layer = catalog.layers.find((l) => l.id === input.dataset.layer);
       if (!layer?._styleIds) return;
       setLayerVisibility(layer._styleIds, input.checked);
+      document.querySelectorAll(".preset-btn").forEach((btn) => btn.classList.remove("active"));
       writeUrlState();
     });
   });
@@ -884,8 +1069,8 @@ map.on("load", async () => {
   if (urlState?.layers || urlState?.basemap || urlState?.z) {
     applyUrlState(urlState);
   } else {
-    const city = await loadGeoJSON("data/city-boundary.geojson");
-    if (city.features?.[0]) {
+    const city = loaded.find((item) => item.layer.id === "city-boundary")?.data;
+    if (city?.features?.[0]) {
       const coords = [];
       const walk = (c) => {
         if (typeof c[0] === "number") coords.push(c);
@@ -902,6 +1087,7 @@ map.on("load", async () => {
 
   map.on("moveend", () => writeUrlState());
   writeUrlState();
+  setLoading(false);
 
   document.getElementById("share-btn").addEventListener("click", async () => {
     writeUrlState();
@@ -919,16 +1105,31 @@ map.on("load", async () => {
 
 const panel = document.getElementById("side-panel");
 const toggle = document.getElementById("panel-toggle");
-toggle.addEventListener("click", () => {
-  const open = panel.classList.toggle("open");
+const backdrop = document.getElementById("panel-backdrop");
+
+function setPanelOpen(open) {
+  panel.classList.toggle("open", open);
   toggle.setAttribute("aria-expanded", String(open));
-});
-if (window.matchMedia("(max-width: 900px)").matches) {
-  panel.classList.remove("open");
-  toggle.setAttribute("aria-expanded", "false");
-} else {
-  panel.classList.add("open");
+  if (backdrop) backdrop.hidden = !open || !window.matchMedia("(max-width: 900px)").matches;
 }
+
+toggle.addEventListener("click", () => {
+  setPanelOpen(!panel.classList.contains("open"));
+});
+backdrop?.addEventListener("click", () => setPanelOpen(false));
+
+if (window.matchMedia("(max-width: 900px)").matches) {
+  setPanelOpen(false);
+} else {
+  setPanelOpen(true);
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  featureCard.hidden = true;
+  document.getElementById("search-results").hidden = true;
+  if (window.matchMedia("(max-width: 900px)").matches) setPanelOpen(false);
+});
 
 const searchForm = document.getElementById("search-form");
 const searchInput = document.getElementById("search-input");

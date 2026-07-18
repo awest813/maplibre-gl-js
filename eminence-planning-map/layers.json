@@ -167,7 +167,7 @@
       "name": "Railroads",
       "group": "community",
       "path": "data/railroads.geojson",
-      "defaultVisible": true,
+      "defaultVisible": false,
       "source": "Kentucky railroads (DGI)",
       "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Railroads_WGS84WM/MapServer",
       "updated": "2026-07-18",
@@ -244,7 +244,7 @@
       "name": "Wastewater plant",
       "group": "utilities",
       "path": "data/wwtp.geojson",
-      "defaultVisible": true,
+      "defaultVisible": false,
       "source": "Kentucky wastewater treatment plants (WRIS)",
       "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Wastewater_WGS84WM/MapServer",
       "updated": "2026-07-18",
@@ -377,7 +377,7 @@
       "source": "OpenStreetMap footways / cycleways",
       "sourceUrl": "https://www.openstreetmap.org/copyright",
       "updated": "2026-07-18",
-      "verification_status": "verified_state_gis",
+      "verification_status": "community_mapped",
       "notes": "Community-mapped; coverage is incomplete."
     },
     {
@@ -389,7 +389,7 @@
       "source": "OpenStreetMap",
       "sourceUrl": "https://www.openstreetmap.org/copyright",
       "updated": "2026-07-18",
-      "verification_status": "verified_state_gis"
+      "verification_status": "community_mapped"
     },
     {
       "id": "osm-parking",
@@ -400,7 +400,7 @@
       "source": "OpenStreetMap",
       "sourceUrl": "https://www.openstreetmap.org/copyright",
       "updated": "2026-07-18",
-      "verification_status": "verified_state_gis"
+      "verification_status": "community_mapped"
     },
     {
       "id": "osm-amenities",
@@ -411,7 +411,7 @@
       "source": "OpenStreetMap",
       "sourceUrl": "https://www.openstreetmap.org/copyright",
       "updated": "2026-07-18",
-      "verification_status": "verified_state_gis"
+      "verification_status": "community_mapped"
     },
     {
       "id": "osm-shops",
@@ -422,7 +422,7 @@
       "source": "OpenStreetMap",
       "sourceUrl": "https://www.openstreetmap.org/copyright",
       "updated": "2026-07-18",
-      "verification_status": "verified_state_gis"
+      "verification_status": "community_mapped"
     }
   ]
 }
