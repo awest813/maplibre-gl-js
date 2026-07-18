@@ -1625,6 +1625,7 @@ function applyUrlState(state) {
       if (layer._styleIds) setLayerVisibility(layer._styleIds, on);
     }
     updateLayerCount();
+    openFoldsForActiveLayers();
   }
   const z = Number(state.z);
   const lng = Number(state.lng);
