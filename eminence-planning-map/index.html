@@ -121,9 +121,16 @@
             </div>
           </section>
 
-          <details class="panel-fold" data-group="base">
-            <summary>Base layers <span class="fold-count" data-fold-count="base"></span></summary>
-            <div class="layer-list" id="layers-base"></div>
+          <details class="panel-fold" data-group="boundaries">
+            <summary>Boundaries <span class="fold-count" data-fold-count="boundaries"></span></summary>
+            <p class="hint">City limits, parcels, districts, and census geography.</p>
+            <div class="layer-list" id="layers-boundaries"></div>
+          </details>
+
+          <details class="panel-fold" data-group="environment">
+            <summary>Environment <span class="fold-count" data-fold-count="environment"></span></summary>
+            <p class="hint">Water, floodplain, wetlands, karst, and related hazards.</p>
+            <div class="layer-list" id="layers-environment"></div>
           </details>
 
           <details class="panel-fold" data-group="planning">
@@ -132,9 +139,19 @@
             <div class="layer-list" id="layers-planning"></div>
           </details>
 
+          <details class="panel-fold" data-group="safety">
+            <summary>Safety &amp; services <span class="fold-count" data-fold-count="safety"></span></summary>
+            <div class="layer-list" id="layers-safety"></div>
+          </details>
+
           <details class="panel-fold" data-group="community">
             <summary>Community <span class="fold-count" data-fold-count="community"></span></summary>
             <div class="layer-list" id="layers-community"></div>
+          </details>
+
+          <details class="panel-fold" data-group="mobility">
+            <summary>Mobility <span class="fold-count" data-fold-count="mobility"></span></summary>
+            <div class="layer-list" id="layers-mobility"></div>
           </details>
 
           <details class="panel-fold" data-group="utilities">
@@ -145,7 +162,7 @@
 
           <details class="panel-fold" data-group="places">
             <summary>Places <span class="fold-count" data-fold-count="places"></span></summary>
-            <p class="hint">Community-mapped OSM plus regional trails and chargers.</p>
+            <p class="hint">Addresses and community-mapped OSM points of interest.</p>
             <div class="layer-list" id="layers-places"></div>
           </details>
 
@@ -155,14 +172,15 @@
             <div class="layer-list" id="layers-analysis"></div>
           </details>
 
-          <details class="panel-fold">
-            <summary>At a glance</summary>
-            <div class="stats-grid" id="stats-grid"></div>
+          <details class="panel-fold" open>
+            <summary>Legend <span class="fold-count" id="legend-count"></span></summary>
+            <p class="hint">Swatches for layers currently on the map.</p>
+            <div class="legend" id="legend-list"></div>
           </details>
 
           <details class="panel-fold">
-            <summary>Legend</summary>
-            <ul class="legend" id="legend-list"></ul>
+            <summary>At a glance</summary>
+            <div class="stats-grid" id="stats-grid"></div>
           </details>
 
           <details class="panel-fold">

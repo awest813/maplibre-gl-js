@@ -77,12 +77,27 @@ const MONEY_KEYS = new Set([
 ]);
 
 const GROUP_TARGETS = {
-  base: "layers-base",
+  boundaries: "layers-boundaries",
+  environment: "layers-environment",
   planning: "layers-planning",
+  safety: "layers-safety",
   community: "layers-community",
+  mobility: "layers-mobility",
   utilities: "layers-utilities",
   places: "layers-places",
   analysis: "layers-analysis",
+};
+
+const GROUP_LABELS = {
+  boundaries: "Boundaries",
+  environment: "Environment",
+  planning: "Planning",
+  safety: "Safety & services",
+  community: "Community",
+  mobility: "Mobility",
+  utilities: "Utilities",
+  places: "Places",
+  analysis: "Analysis",
 };
 
 const ZONING_COLORS = [
@@ -102,21 +117,95 @@ const ZONING_COLORS = [
   "#9ca3af",
 ];
 
-const LEGEND = [
-  { label: "City limits", color: "#2f4a32", kind: "line" },
-  { label: "Parcels", color: "#78716c", kind: "line" },
-  { label: "Residential districts", color: "#e9c46a", kind: "fill" },
-  { label: "Business districts", color: "#63b3ed", kind: "fill" },
-  { label: "Industrial districts", color: "#57534e", kind: "fill" },
-  { label: "Agricultural districts", color: "#8a9a6d", kind: "fill" },
-  { label: "Buildings", color: "#6b5b4a", kind: "fill" },
-  { label: "Flood hazard", color: "#c45c26", kind: "fill" },
-  { label: "Wetlands", color: "#2f6f6a", kind: "fill" },
-  { label: "Public / exempt parcels", color: "#0f766e", kind: "fill" },
-  { label: "Trails / paths", color: "#166534", kind: "line" },
-  { label: "Civic facilities", color: "#9a6b2f", kind: "dot" },
-  { label: "Brownfields / vacancy hints", color: "#b45309", kind: "dot" },
-];
+/** Primary legend swatches keyed to map paint colors in addLayerStyles(). */
+const LEGEND_META = {
+  "henry-county": { kind: "fill", color: "#9a6b2f", opacity: 0.35 },
+  "city-boundary": { kind: "line", color: "#2f4a32" },
+  parcels: { kind: "line", color: "#78716c" },
+  "magisterial-districts": { kind: "fill", color: "#9a6b2f", opacity: 0.35 },
+  "voting-precincts": { kind: "fill", color: "#6b5b4a", opacity: 0.35 },
+  "census-tracts": { kind: "fill", color: "#3d6f7a", opacity: 0.35 },
+  "census-block-groups": { kind: "fill", color: "#5b8a8f", opacity: 0.35 },
+  "school-districts": { kind: "fill", color: "#9a6b2f", opacity: 0.35 },
+  streams: { kind: "line", color: "#3d6f7a" },
+  waterbodies: { kind: "fill", color: "#6fa0ab", opacity: 0.55 },
+  "flood-hazards": { kind: "fill", color: "#c45c26", opacity: 0.45 },
+  wetlands: { kind: "fill", color: "#2f6f6a", opacity: 0.45 },
+  sinkholes: { kind: "fill", color: "#7c3a2d", opacity: 0.5 },
+  "sinkhole-drainage": { kind: "fill", color: "#8b5e3c", opacity: 0.45 },
+  "karst-potential": { kind: "fill", color: "#a67c52", opacity: 0.4 },
+  "groundwater-sensitivity": {
+    items: [
+      { label: "Groundwater · low", kind: "fill", color: "#d9e0d2" },
+      { label: "Groundwater · moderate", kind: "fill", color: "#e9c46a" },
+      { label: "Groundwater · high", kind: "fill", color: "#b45309" },
+    ],
+  },
+  dams: { kind: "dot", color: "#7c3a2d" },
+  "priority-watersheds": { kind: "fill", color: "#3d6f7a", opacity: 0.35 },
+  "henry-landuse-zoning": {
+    items: [
+      { label: "Agricultural", kind: "fill", color: "#8a9a6d" },
+      { label: "Residential", kind: "fill", color: "#e9c46a" },
+      { label: "Business", kind: "fill", color: "#63b3ed" },
+      { label: "Industrial", kind: "fill", color: "#57534e" },
+    ],
+  },
+  brownfields: { kind: "dot", color: "#b45309" },
+  "industrial-parks": { kind: "fill", color: "#57534e", opacity: 0.45 },
+  "sewer-planning-units": { kind: "fill", color: "#0f766e", opacity: 0.35 },
+  "social-vulnerability": { kind: "fill", color: "#9a3412", opacity: 0.4 },
+  broadband: {
+    items: [
+      { label: "Broadband gap · low", kind: "fill", color: "#86efac" },
+      { label: "Broadband gap · moderate", kind: "fill", color: "#e9c46a" },
+      { label: "Broadband gap · high", kind: "fill", color: "#b45309" },
+    ],
+  },
+  "fire-districts": { kind: "fill", color: "#b45309", opacity: 0.35 },
+  "fire-stations": { kind: "dot", color: "#b45309" },
+  "police-stations": { kind: "dot", color: "#1d4e89" },
+  "law-districts": { kind: "fill", color: "#1d4e89", opacity: 0.35 },
+  "ems-districts": { kind: "fill", color: "#9a3412", opacity: 0.35 },
+  "ems-agencies": { kind: "dot", color: "#9a3412" },
+  courthouses: { kind: "dot", color: "#2f4a32" },
+  "health-centers": { kind: "dot", color: "#0f766e" },
+  "nursing-homes": { kind: "dot", color: "#7a4e2d" },
+  schools: { kind: "dot", color: "#2f4a32" },
+  "school-buffers": { kind: "fill", color: "#4a6b4e", opacity: 0.35 },
+  libraries: { kind: "dot", color: "#9a6b2f" },
+  "parks-open-space": { kind: "fill", color: "#4a6b4e", opacity: 0.45 },
+  "public-housing": { kind: "dot", color: "#0f766e" },
+  airports: { kind: "dot", color: "#57534e" },
+  roads: {
+    items: [
+      { label: "Local roads", kind: "line", color: "#3a342c" },
+      { label: "State roads", kind: "line", color: "#9a6b2f" },
+    ],
+  },
+  railroads: { kind: "line", color: "#4a3a2a" },
+  bridges: { kind: "dot", color: "#6b5b4a" },
+  "traffic-counts": { kind: "dot", color: "#b45309" },
+  buildings: { kind: "fill", color: "#6b5b4a", opacity: 0.65 },
+  "osm-sidewalks": { kind: "line", color: "#15803d" },
+  trails: { kind: "line", color: "#166534" },
+  "ev-chargers": { kind: "dot", color: "#15803d" },
+  wwtp: { kind: "dot", color: "#3d6f7a" },
+  "ww-improvements": { kind: "dot", color: "#0f766e" },
+  "water-tanks": { kind: "dot", color: "#3d6f7a" },
+  "water-pump-stations": { kind: "dot", color: "#3d6f7a" },
+  "water-improvements": { kind: "dot", color: "#0f766e" },
+  addresses: { kind: "dot", color: "#3d6f7a" },
+  "osm-parks": { kind: "fill", color: "#4ade80", opacity: 0.55 },
+  "osm-parking": { kind: "fill", color: "#64748b", opacity: 0.55 },
+  "osm-amenities": { kind: "dot", color: "#9a6b2f" },
+  "osm-shops": { kind: "dot", color: "#b45309" },
+  "analysis-public-exempt-parcels": { kind: "fill", color: "#0f766e", opacity: 0.55 },
+  "analysis-zero-improvement-parcels": { kind: "fill", color: "#ea580c", opacity: 0.5 },
+  "analysis-unbuilt-addresses": { kind: "dot", color: "#b45309" },
+  "analysis-unaddressed-buildings": { kind: "fill", color: "#b45309", opacity: 0.55 },
+  "analysis-missing-sidewalks": { kind: "line", color: "#b45309" },
+};
 
 /** Higher score = preferred when features overlap under the cursor. */
 function inspectPriority(styleId) {
@@ -1126,16 +1215,117 @@ function renderStats() {
     .join("");
 }
 
+function hexToRgba(hex, opacity = 1) {
+  const raw = String(hex || "").replace("#", "");
+  if (raw.length !== 3 && raw.length !== 6) return hex;
+  const full =
+    raw.length === 3
+      ? raw
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : raw;
+  const n = Number.parseInt(full, 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
+function legendItemsForLayer(layer) {
+  const meta = LEGEND_META[layer.id];
+  if (!meta) return [{ label: layer.name, kind: "fill", color: "#9a6b2f", opacity: 0.45 }];
+  if (Array.isArray(meta.items)) return meta.items;
+  return [
+    {
+      label: layer.name,
+      kind: meta.kind || "fill",
+      color: meta.color || "#9a6b2f",
+      opacity: meta.opacity,
+    },
+  ];
+}
+
+function swatchHtml(item) {
+  const kind = item.kind || "fill";
+  const cls = kind === "line" ? "swatch line" : kind === "dot" ? "swatch dot" : "swatch";
+  const color = item.color || "#9a6b2f";
+  const style =
+    kind === "line"
+      ? `border-top-color:${color}`
+      : `background:${kind === "fill" && item.opacity != null ? hexToRgba(color, item.opacity) : color}`;
+  return `<span class="${cls}" style="${style}" aria-hidden="true"></span>`;
+}
+
 function renderLegend() {
   const el = document.getElementById("legend-list");
-  el.innerHTML = LEGEND.map((item) => {
-    const cls = item.kind === "line" ? "swatch line" : item.kind === "dot" ? "swatch dot" : "swatch";
-    const style =
-      item.kind === "line"
-        ? `border-top-color:${item.color}`
-        : `background:${item.color}`;
-    return `<li><span class="${cls}" style="${style}"></span><span>${item.label}</span></li>`;
-  }).join("");
+  const countEl = document.getElementById("legend-count");
+  if (!el) return;
+
+  const active = (catalog?.layers || []).filter((layer) => {
+    if (failedLayers.has(layer.id)) return false;
+    return !!document.querySelector(`input[data-layer="${layer.id}"]`)?.checked;
+  });
+
+  if (!active.length) {
+    el.innerHTML = `<p class="hint legend-empty">Turn on layers to see their colors here.</p>`;
+    if (countEl) {
+      countEl.textContent = "";
+      countEl.classList.remove("has-on");
+    }
+    return;
+  }
+
+  const byGroup = new Map();
+  for (const layer of active) {
+    const group = layer.group || "boundaries";
+    if (!byGroup.has(group)) byGroup.set(group, []);
+    byGroup.get(group).push(layer);
+  }
+
+  const groupOrder = Object.keys(GROUP_TARGETS);
+  let itemCount = 0;
+  const sections = [];
+  for (const group of groupOrder) {
+    const layers = byGroup.get(group);
+    if (!layers?.length) continue;
+    const rows = [];
+    for (const layer of layers) {
+      for (const item of legendItemsForLayer(layer)) {
+        itemCount += 1;
+        rows.push(
+          `<li class="legend-item" data-legend-layer="${escapeHtml(layer.id)}" title="Toggle ${escapeHtml(layer.name)}">
+            ${swatchHtml(item)}
+            <span>${escapeHtml(item.label)}</span>
+          </li>`
+        );
+      }
+    }
+    sections.push(`
+      <div class="legend-group">
+        <p class="legend-group-label">${escapeHtml(GROUP_LABELS[group] || group)}</p>
+        <ul class="legend-list">${rows.join("")}</ul>
+      </div>
+    `);
+  }
+
+  el.innerHTML = sections.join("");
+  if (countEl) {
+    countEl.textContent = itemCount ? `${itemCount}` : "";
+    countEl.classList.toggle("has-on", itemCount > 0);
+  }
+
+  el.querySelectorAll(".legend-item[data-legend-layer]").forEach((row) => {
+    row.addEventListener("click", () => {
+      const layerId = row.dataset.legendLayer;
+      const input = document.querySelector(`input[data-layer="${layerId}"]`);
+      if (!input || input.disabled) return;
+      setLayerChecked(layerId, !input.checked);
+      updateLayerCount();
+      openFoldsForActiveLayers();
+      writeUrlState();
+    });
+  });
 }
 
 function currentBasemapId() {
@@ -1416,15 +1606,7 @@ function applyUrlState(state) {
 }
 
 function openFoldsForActiveLayers() {
-  const groupToFold = {
-    base: "layers-base",
-    planning: "layers-planning",
-    community: "layers-community",
-    utilities: "layers-utilities",
-    places: "layers-places",
-    analysis: "layers-analysis",
-  };
-  for (const [group, listId] of Object.entries(groupToFold)) {
+  for (const [group, listId] of Object.entries(GROUP_TARGETS)) {
     const list = document.getElementById(listId);
     const fold = list?.closest("details");
     if (!fold) continue;
@@ -1477,6 +1659,7 @@ function updateLayerCount() {
     toggleBtn.textContent = panelOpen ? "Close" : on ? `Layers · ${on}` : "Layers";
   }
   updateFoldCounts();
+  renderLegend();
 }
 
 function syncLayerRowState(input) {
@@ -1548,7 +1731,7 @@ function renderLayerControls(layers) {
   sourceEl.innerHTML = "";
 
   for (const layer of layers) {
-    const targetId = GROUP_TARGETS[layer.group] || "layers-base";
+    const targetId = GROUP_TARGETS[layer.group] || "layers-boundaries";
     const row = document.createElement("div");
     const on = !!layer.defaultVisible && !failedLayers.has(layer.id);
     row.className = `layer-row${on ? " on" : ""}`;

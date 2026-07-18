@@ -54,11 +54,14 @@ Upload the contents of `eminence-planning-map/` (not the whole MapLibre repo) to
 
 ## Free layers
 
-**Base:** Henry County, city limits, streets, addresses, buildings, streams, waterbodies, flood hazards, wetlands, sinkholes & drainage, karst potential, groundwater sensitivity, priority watersheds, dams  
-**Planning:** zoning/land-use districts (`HenryCoZoning` / `Landuse_Henry`), parcels without owner names, brownfields, industrial parks  
-**Community:** railroads, bridges, traffic counts, schools, walking buffers, school districts, fire/EMS/law response areas, fire & police stations, courthouses, libraries, health centers, nursing/assisted living, public housing, parks/open space, census tracts & block groups, magisterial districts, voting precincts, social vulnerability, broadband, airports  
-**Utilities:** wastewater plant, wastewater projects, sewer planning units, water tanks, water pump stations, water projects (generalized—not pipe networks)  
-**Places (OSM + regional):** sidewalks/paths, trails/multi-use, parks, parking, civic/food amenities, shops, EV chargers  
+**Boundaries:** Henry County, city limits, parcels, school/magisterial/voting districts, census tracts & block groups  
+**Environment:** streams, waterbodies, flood hazards, wetlands, sinkholes & drainage, karst, groundwater sensitivity, priority watersheds, dams  
+**Planning:** zoning/land-use (`HenryCoZoning` / `Landuse_Henry`), brownfields, industrial parks, sewer planning units, social vulnerability, broadband  
+**Safety & services:** fire/EMS/law districts & stations, courthouses, health centers, nursing/assisted living  
+**Community:** schools & walking buffers, libraries, parks/open space, public housing, airports  
+**Mobility:** streets, railroads, bridges, traffic counts, buildings, sidewalks/paths, trails, EV chargers  
+**Utilities:** wastewater plant & projects, water tanks, pump stations, water projects (generalized—not pipe networks)  
+**Places:** addresses, OSM parks/parking/amenities/shops  
 **Analysis:** public/exempt parcels; zero-improvement parcels; unbuilt-address hints; unaddressed-building hints; possible missing sidewalks  
 
 **Basemaps:** OpenStreetMap · Kentucky NAIP 2022 aerial tiles
