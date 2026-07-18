@@ -1,27 +1,45 @@
 const VERIFY_LABELS = {
   verified_state_gis: "Public GIS",
   estimated: "Heuristic / estimated",
+  public_arcgis_unverified_currency: "Public ArcGIS — confirm currency",
 };
 
 const GROUP_TARGETS = {
   base: "layers-base",
+  planning: "layers-planning",
   community: "layers-community",
   utilities: "layers-utilities",
   places: "layers-places",
   analysis: "layers-analysis",
 };
 
+const ZONING_COLORS = [
+  "match",
+  ["upcase", ["to-string", ["get", "district_code"]]],
+  "A1", "#a3b18a",
+  "A2", "#8a9a6d",
+  "A3", "#b5c99a",
+  "R1", "#f2cc8f",
+  "R2", "#e9c46a",
+  "R3", "#f4a261",
+  "B1", "#90cdf4",
+  "B2", "#63b3ed",
+  "B3", "#4299e1",
+  "I1", "#c4b5fd",
+  "I2", "#a78bfa",
+  "#9ca3af",
+];
+
 const LEGEND = [
   { label: "City limits", color: "#2f4a32", kind: "line" },
-  { label: "Local streets", color: "#3a342c", kind: "line" },
-  { label: "State highways", color: "#9a6b2f", kind: "line" },
+  { label: "Parcels", color: "#78716c", kind: "line" },
+  { label: "Residential districts", color: "#e9c46a", kind: "fill" },
+  { label: "Business districts", color: "#63b3ed", kind: "fill" },
+  { label: "Industrial districts", color: "#a78bfa", kind: "fill" },
+  { label: "Agricultural districts", color: "#8a9a6d", kind: "fill" },
   { label: "Buildings", color: "#6b5b4a", kind: "fill" },
-  { label: "Water", color: "#6fa0ab", kind: "fill" },
   { label: "Flood hazard", color: "#c45c26", kind: "fill" },
-  { label: "Schools", color: "#2f4a32", kind: "dot" },
-  { label: "Utilities", color: "#3d6f7a", kind: "dot" },
-  { label: "OSM places", color: "#7c3aed", kind: "dot" },
-  { label: "Mapped paths", color: "#15803d", kind: "line" },
+  { label: "Public / exempt parcels", color: "#0f766e", kind: "fill" },
   { label: "Vacancy / sidewalk hints", color: "#b45309", kind: "dot" },
 ];
 
@@ -392,6 +410,69 @@ function addLayerStyles(layer) {
     return [`${id}-circle`, `${id}-line`, `${id}-fill`];
   }
 
+  if (id === "henry-landuse-zoning") {
+    map.addLayer({
+      id: `${id}-fill`,
+      type: "fill",
+      source: id,
+      paint: {
+        "fill-color": ZONING_COLORS,
+        "fill-opacity": 0.45,
+      },
+    });
+    map.addLayer({
+      id: `${id}-line`,
+      type: "line",
+      source: id,
+      paint: { "line-color": "#44403c", "line-width": 0.8, "line-opacity": 0.7 },
+    });
+    map.addLayer({
+      id: `${id}-label`,
+      type: "symbol",
+      source: id,
+      minzoom: 13,
+      layout: {
+        "text-field": ["get", "district_code"],
+        "text-size": 12,
+        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+      },
+      paint: {
+        "text-color": "#1c2418",
+        "text-halo-color": "#f3eee4",
+        "text-halo-width": 1.4,
+      },
+    });
+    return [`${id}-fill`, `${id}-line`, `${id}-label`];
+  }
+
+  if (id === "parcels") {
+    map.addLayer({
+      id: `${id}-fill`,
+      type: "fill",
+      source: id,
+      paint: { "fill-color": "#a8a29e", "fill-opacity": 0.05 },
+    });
+    map.addLayer({
+      id: `${id}-line`,
+      type: "line",
+      source: id,
+      paint: {
+        "line-color": "#78716c",
+        "line-width": ["interpolate", ["linear"], ["zoom"], 12, 0.2, 16, 1],
+        "line-opacity": 0.85,
+      },
+    });
+    return [`${id}-fill`, `${id}-line`];
+  }
+
+  if (id === "analysis-public-exempt-parcels") {
+    return fillLine(id, "#0f766e", "#115e59", 0.45);
+  }
+
+  if (id === "analysis-zero-improvement-parcels") {
+    return fillLine(id, "#ea580c", "#c2410c", 0.4);
+  }
+
   if (id === "analysis-unbuilt-addresses") {
     map.addLayer({
       id: `${id}-circle`,
@@ -517,12 +598,12 @@ function renderStats() {
     return;
   }
   const items = [
+    [stats.parcels ?? 0, "Parcels"],
+    [stats.zoning_polygons ?? 0, "Zoning polygons"],
     [stats.buildings, "Buildings"],
     [stats.addresses, "Addresses"],
-    [stats.schools, "Schools"],
-    [stats.osm_amenities ?? 0, "OSM amenities"],
-    [stats.unbuilt_addresses, "Unbuilt address hints"],
-    [stats.missing_sidewalk_hints ?? 0, "Missing sidewalk hints"],
+    [stats.zero_improvement_parcels ?? 0, "Zero-improvement parcels"],
+    [stats.public_exempt_parcels ?? 0, "Public / exempt parcels"],
   ];
   el.innerHTML = items
     .map(
@@ -662,8 +743,17 @@ function renderLayerControls(layers) {
     const row = document.createElement("div");
     row.className = "layer-row";
     const status =
-      layer.verification_status === "estimated" ? "estimated" : "ready";
-    const statusLabel = status === "estimated" ? "Heuristic" : "Free data";
+      layer.verification_status === "estimated"
+        ? "estimated"
+        : layer.verification_status === "public_arcgis_unverified_currency"
+          ? "partial"
+          : "ready";
+    const statusLabel =
+      status === "estimated"
+        ? "Heuristic"
+        : status === "partial"
+          ? "Confirm currency"
+          : "Free data";
     row.innerHTML = `
       <label>
         <input type="checkbox" data-layer="${layer.id}" ${layer.defaultVisible ? "checked" : ""} />
@@ -760,8 +850,11 @@ map.on("load", async () => {
         const f = e.features?.[0];
         if (!f) return;
         const title =
+          f.properties?.district_name ||
+          f.properties?.district_code ||
           f.properties?.name ||
           f.properties?.address ||
+          f.properties?.parcel_id ||
           f.properties?.PROP_ADDR ||
           f.properties?.bridge_id ||
           f.properties?.tract_id ||

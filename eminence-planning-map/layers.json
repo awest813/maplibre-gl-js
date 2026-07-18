@@ -2,7 +2,7 @@
   "title": "Eminence Planning and Zoning Explorer",
   "subtitle": "Unofficial public planning tool",
   "contactEmail": "awest40709@ucumberlands.edu",
-  "disclaimer": "This map uses free, publicly accessible GIS data only (Kentucky GIS + OpenStreetMap). It is an unofficial planning tool—not a substitute for Henry County zoning maps, PVA parcels, or legal determinations. Analysis layers are heuristics, not official vacancy or sidewalk inventories.",
+  "disclaimer": "This map uses free, publicly accessible GIS data (Kentucky GIS, OpenStreetMap, and public Henry County ArcGIS layers). It is an unofficial planning tool. The HenryCoZoning service layer is named Landuse_Henry—confirm with Planning & Zoning before treating it as official current zoning. Parcel owner names are omitted. Analysis layers are heuristics.",
   "center": [-85.1805, 38.3645],
   "zoom": 13.2,
   "bounds": [-85.21, 38.34, -85.14, 38.39],
@@ -14,6 +14,12 @@
       "layers": ["city-boundary", "roads", "buildings", "streams", "waterbodies", "railroads", "schools"]
     },
     {
+      "id": "zoning",
+      "name": "Zoning districts",
+      "basemap": "osm",
+      "layers": ["city-boundary", "roads", "henry-landuse-zoning", "parcels"]
+    },
+    {
       "id": "walkability",
       "name": "Walkability",
       "basemap": "osm",
@@ -23,7 +29,13 @@
       "id": "vacancy",
       "name": "Vacancy hints",
       "basemap": "ky-naip-2022",
-      "layers": ["city-boundary", "roads", "buildings", "analysis-unbuilt-addresses", "analysis-unaddressed-buildings"]
+      "layers": ["city-boundary", "roads", "buildings", "parcels", "analysis-zero-improvement-parcels", "analysis-unbuilt-addresses"]
+    },
+    {
+      "id": "public-land",
+      "name": "Public / exempt land",
+      "basemap": "osm",
+      "layers": ["city-boundary", "roads", "parcels", "analysis-public-exempt-parcels", "schools"]
     },
     {
       "id": "utilities",
@@ -271,6 +283,54 @@
       "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Water_WGS84WM/MapServer",
       "updated": "2026-07-18",
       "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "henry-landuse-zoning",
+      "name": "Zoning / land-use districts",
+      "group": "planning",
+      "path": "data/henry-landuse-zoning.geojson",
+      "defaultVisible": false,
+      "source": "Public HenryCoZoning FeatureServer (layer Landuse_Henry)",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/HenryCoZoning/FeatureServer/19",
+      "updated": "2026-07-18",
+      "verification_status": "public_arcgis_unverified_currency",
+      "notes": "Free public layer with district codes A2/B1–B3/R1–R3/I1–I2. Service title says zoning; layer name says land use. Confirm official status and currency with Henry County Planning & Zoning."
+    },
+    {
+      "id": "parcels",
+      "name": "Parcels (no owner names)",
+      "group": "planning",
+      "path": "data/parcels.geojson",
+      "defaultVisible": false,
+      "source": "Public HenryCoParcels FeatureServer",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/HenryCoParcels/FeatureServer/13",
+      "updated": "2026-07-18",
+      "verification_status": "public_arcgis_unverified_currency",
+      "notes": "Owner names intentionally omitted from the public extract."
+    },
+    {
+      "id": "analysis-public-exempt-parcels",
+      "name": "Public / exempt parcels",
+      "group": "analysis",
+      "path": "data/analysis-public-exempt-parcels.geojson",
+      "defaultVisible": false,
+      "source": "Derived from HenryCoParcels CLASS codes",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/HenryCoParcels/FeatureServer/13",
+      "updated": "2026-07-18",
+      "verification_status": "estimated",
+      "notes": "Exempt city/county/state/federal/educational/religious/other classes. Not a verified public-land inventory."
+    },
+    {
+      "id": "analysis-zero-improvement-parcels",
+      "name": "Zero-improvement parcels",
+      "group": "analysis",
+      "path": "data/analysis-zero-improvement-parcels.geojson",
+      "defaultVisible": false,
+      "source": "Derived from HenryCoParcels assessment fields",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/HenryCoParcels/FeatureServer/13",
+      "updated": "2026-07-18",
+      "verification_status": "estimated",
+      "notes": "Land value > 0 and improvement value = 0. Heuristic vacant-land signal only."
     },
     {
       "id": "analysis-unbuilt-addresses",

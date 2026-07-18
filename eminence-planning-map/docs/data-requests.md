@@ -1,6 +1,6 @@
 # Data request templates — Eminence Planning Map
 
-**Optional / later.** The live map currently uses free public Kentucky GIS only. Use these templates if you later want parcel zoning or PVA polygons that are not posted as free downloads.
+**Still useful for verification.** The live map already loads free public `HenryCoZoning` / `HenryCoParcels` ArcGIS layers. Use these templates to confirm whether the `Landuse_Henry` layer is authoritative current zoning, request amendment history, and obtain metadata (effective date, projection, responsible agency).
 
 Preferred formats: GeoPackage, shapefile, GeoJSON, file geodatabase, or a spreadsheet with parcel IDs and zoning classifications.
 
