@@ -48,6 +48,12 @@
       </div>
       <button type="button" class="panel-backdrop" id="panel-backdrop" aria-label="Close layers panel" hidden></button>
 
+      <div class="feature-card" id="feature-card" hidden>
+        <button type="button" class="feature-close" id="feature-close" aria-label="Close details">×</button>
+        <h3 id="feature-title"></h3>
+        <dl id="feature-attrs"></dl>
+      </div>
+
       <aside class="side-panel" id="side-panel" aria-label="Map controls and information">
         <section class="panel-section">
           <h2>About</h2>
@@ -68,13 +74,14 @@
 
         <section class="panel-section">
           <h2>Map tools</h2>
-          <p class="hint">Export and measure (inspired by <a href="https://github.com/maplibre/awesome-maplibre" target="_blank" rel="noopener noreferrer">awesome-maplibre</a> plugins).</p>
+          <p class="hint">Export a snapshot, measure distance, or return to the city overview.</p>
           <div class="tool-list">
             <button type="button" class="tool-btn" id="export-png-btn">Export PNG</button>
             <button type="button" class="tool-btn" id="measure-btn" aria-pressed="false">Measure</button>
             <button type="button" class="tool-btn tool-btn-secondary" id="measure-clear-btn" hidden>Clear measure</button>
+            <button type="button" class="tool-btn tool-btn-secondary" id="reset-view-btn">Reset view</button>
           </div>
-          <p class="hint" id="measure-status" hidden aria-live="polite"></p>
+          <p class="hint tool-status" id="tool-status" hidden aria-live="polite"></p>
         </section>
 
         <section class="panel-section">
@@ -155,12 +162,11 @@
         </section>
       </aside>
     </main>
+  </div>
 
-    <div class="feature-card" id="feature-card" hidden>
-      <button type="button" class="feature-close" id="feature-close" aria-label="Close details">×</button>
-      <h3 id="feature-title"></h3>
-      <dl id="feature-attrs"></dl>
-    </div>
+  <div class="boot-error" id="boot-error" hidden role="alert">
+    <p class="boot-error-title">Map could not start</p>
+    <p class="boot-error-detail" id="boot-error-detail"></p>
   </div>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>

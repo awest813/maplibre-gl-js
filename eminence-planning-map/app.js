@@ -90,7 +90,37 @@ const LEGEND = [
 
 const EMPTY_FC = { type: "FeatureCollection", features: [] };
 
-const catalog = await fetch("layers.json").then((r) => r.json());
+function setLoading(visible, detail) {
+  const el = document.getElementById("loading");
+  const detailEl = document.getElementById("loading-detail");
+  if (!el) return;
+  el.hidden = !visible;
+  if (detail && detailEl) detailEl.textContent = detail;
+}
+
+function showBootError(message) {
+  const el = document.getElementById("boot-error");
+  const detail = document.getElementById("boot-error-detail");
+  if (detail) detail.textContent = message;
+  if (el) el.hidden = false;
+  setLoading(false);
+}
+
+if (typeof maplibregl === "undefined") {
+  showBootError("MapLibre GL JS failed to load. Check your network connection and reload.");
+  throw new Error("maplibregl missing");
+}
+
+let catalog;
+try {
+  const res = await fetch("layers.json");
+  if (!res.ok) throw new Error(`layers.json HTTP ${res.status}`);
+  catalog = await res.json();
+} catch (err) {
+  showBootError(`Could not load map catalog (${err.message}).`);
+  throw err;
+}
+
 const stats = await fetch("data/stats.json")
   .then((r) => (r.ok ? r.json() : null))
   .catch(() => null);
@@ -106,33 +136,35 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+function coerceNumber(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+}
+
 function formatPropValue(key, value) {
   if (typeof value === "boolean") return value ? "Yes" : "No";
-  if (MONEY_KEYS.has(key) && typeof value === "number") {
+  const num = coerceNumber(value);
+  if (MONEY_KEYS.has(key) && num !== null) {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
       maximumFractionDigits: 0,
-    }).format(value);
+    }).format(num);
   }
-  if (key === "acres" && typeof value === "number") return value.toFixed(2);
-  if (typeof value === "number" && Number.isFinite(value) && !Number.isInteger(value)) {
-    return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  if (key === "acres" && num !== null) return num.toFixed(2);
+  if (num !== null && !Number.isInteger(num)) {
+    return num.toLocaleString("en-US", { maximumFractionDigits: 2 });
   }
-  if (typeof value === "number") return value.toLocaleString("en-US");
+  if (num !== null) return num.toLocaleString("en-US");
   return String(value);
 }
 
 function humanizeKey(key) {
   return PROP_LABELS[key] || key.replaceAll("_", " ");
-}
-
-function setLoading(visible, detail) {
-  const el = document.getElementById("loading");
-  const detailEl = document.getElementById("loading-detail");
-  if (!el) return;
-  el.hidden = !visible;
-  if (detail && detailEl) detailEl.textContent = detail;
 }
 
 function buildStyle(basemapId) {
@@ -181,27 +213,53 @@ function buildStyle(basemapId) {
 const defaultBasemap =
   catalog.basemaps?.find((b) => b.default)?.id || catalog.basemaps?.[0]?.id || "osm";
 
-const map = new maplibregl.Map({
-  container: "map",
-  style: buildStyle(defaultBasemap),
-  center: catalog.center,
-  zoom: catalog.zoom,
-  preserveDrawingBuffer: true,
-  maxBounds: [
-    [catalog.bounds[0] - 0.08, catalog.bounds[1] - 0.08],
-    [catalog.bounds[2] + 0.08, catalog.bounds[3] + 0.08],
-  ],
-});
+let map;
+try {
+  map = new maplibregl.Map({
+    container: "map",
+    style: buildStyle(defaultBasemap),
+    center: catalog.center,
+    zoom: catalog.zoom,
+    preserveDrawingBuffer: true,
+    maxBounds: [
+      [catalog.bounds[0] - 0.08, catalog.bounds[1] - 0.08],
+      [catalog.bounds[2] + 0.08, catalog.bounds[3] + 0.08],
+    ],
+  });
+} catch (err) {
+  console.error(err);
+  showBootError(
+    "This browser could not start the map. WebGL is required — try Chrome, Firefox, or Edge, and enable hardware acceleration."
+  );
+  throw err;
+}
 
 map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), "top-left");
 map.addControl(new maplibregl.ScaleControl({ unit: "imperial" }), "bottom-left");
 map.addControl(new maplibregl.FullscreenControl(), "top-left");
+
+map.on("error", (e) => {
+  const msg = e?.error?.message || String(e?.error || "");
+  if (/Failed to initialize WebGL|webglcontextcreationerror/i.test(msg)) {
+    showBootError(
+      "WebGL failed while starting the map. Try another browser or enable hardware acceleration."
+    );
+    return;
+  }
+  if (msg && !/Failed to fetch|AJAXError|tile/i.test(msg)) {
+    console.warn("Map error:", e.error || e);
+  }
+});
 
 const featureCard = document.getElementById("feature-card");
 const featureTitle = document.getElementById("feature-title");
 const featureAttrs = document.getElementById("feature-attrs");
 let searchIndex = [];
 let searchMarker = null;
+let measuring = false;
+let cityBounds = null;
+const interactiveStyleIds = [];
+const failedLayers = new Set();
 
 document.getElementById("feature-close").addEventListener("click", () => {
   featureCard.hidden = true;
@@ -251,10 +309,14 @@ async function loadGeoJSON(path) {
   try {
     const res = await fetch(path);
     if (!res.ok) throw new Error(`${res.status}`);
-    return await res.json();
+    const data = await res.json();
+    if (!data || data.type !== "FeatureCollection") {
+      throw new Error("invalid GeoJSON");
+    }
+    return { ok: true, data };
   } catch (err) {
     console.warn(`Could not load ${path}`, err);
-    return EMPTY_FC;
+    return { ok: false, data: EMPTY_FC };
   }
 }
 
@@ -669,11 +731,11 @@ function addLayerStyles(layer) {
   }
 
   if (id === "osm-amenities") {
-    return pointStyle(id, "#7c3aed", 6);
+    return pointStyle(id, "#9a6b2f", 6);
   }
 
   if (id === "osm-shops") {
-    return pointStyle(id, "#db2777", 5);
+    return pointStyle(id, "#b45309", 5);
   }
 
   map.addLayer({
@@ -907,6 +969,22 @@ function applyUrlState(state) {
   }
 }
 
+function layerStatusMeta(layer) {
+  if (failedLayers.has(layer.id)) {
+    return { status: "failed", statusLabel: "Failed to load" };
+  }
+  if (layer.verification_status === "estimated") {
+    return { status: "estimated", statusLabel: "Heuristic" };
+  }
+  if (layer.verification_status === "public_arcgis_unverified_currency") {
+    return { status: "partial", statusLabel: "Confirm currency" };
+  }
+  if (layer.verification_status === "community_mapped") {
+    return { status: "partial", statusLabel: "OSM" };
+  }
+  return { status: "ready", statusLabel: "Free data" };
+}
+
 function renderLayerControls(layers) {
   for (const id of Object.values(GROUP_TARGETS)) {
     document.getElementById(id).innerHTML = "";
@@ -918,21 +996,10 @@ function renderLayerControls(layers) {
     const targetId = GROUP_TARGETS[layer.group] || "layers-base";
     const row = document.createElement("div");
     row.className = "layer-row";
-    let status = "ready";
-    let statusLabel = "Free data";
-    if (layer.verification_status === "estimated") {
-      status = "estimated";
-      statusLabel = "Heuristic";
-    } else if (layer.verification_status === "public_arcgis_unverified_currency") {
-      status = "partial";
-      statusLabel = "Confirm currency";
-    } else if (layer.verification_status === "community_mapped") {
-      status = "partial";
-      statusLabel = "OSM";
-    }
+    const { status, statusLabel } = layerStatusMeta(layer);
     row.innerHTML = `
       <label>
-        <input type="checkbox" data-layer="${layer.id}" ${layer.defaultVisible ? "checked" : ""} />
+        <input type="checkbox" data-layer="${layer.id}" ${layer.defaultVisible ? "checked" : ""} ${failedLayers.has(layer.id) ? "disabled" : ""} />
         <span class="layer-name">${escapeHtml(layer.name)}</span>
         <span class="status ${status}">${statusLabel}</span>
         <span class="layer-meta">${escapeHtml(VERIFY_LABELS[layer.verification_status] || "Public GIS")}</span>
@@ -947,6 +1014,93 @@ function renderLayerControls(layers) {
       <a href="${escapeHtml(layer.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(layer.source)}</a>${escapeHtml(date)}
       ${layer.notes ? `<br /><span>${escapeHtml(layer.notes)}</span>` : ""}`;
     sourceEl.appendChild(li);
+  }
+}
+
+function featureTitleFrom(props, fallback) {
+  return (
+    props?.district_name ||
+    props?.district_code ||
+    props?.name ||
+    props?.address ||
+    props?.parcel_id ||
+    props?.PROP_ADDR ||
+    props?.bridge_id ||
+    props?.tract_id ||
+    props?.shop ||
+    props?.amenity ||
+    fallback ||
+    "Feature"
+  );
+}
+
+function styleIdToLayer(styleId) {
+  return catalog.layers.find((layer) => layer._styleIds?.includes(styleId));
+}
+
+function setupFeatureInspect() {
+  map.on("click", (e) => {
+    if (measuring) return;
+    if (!interactiveStyleIds.length) return;
+    const hits = map.queryRenderedFeatures(e.point, { layers: interactiveStyleIds.filter((id) => map.getLayer(id)) });
+    const f = hits[0];
+    if (!f) {
+      featureCard.hidden = true;
+      return;
+    }
+    const layer = styleIdToLayer(f.layer.id);
+    showFeature(featureTitleFrom(f.properties, layer?.name), f.properties);
+  });
+
+  map.on("mousemove", (e) => {
+    if (measuring) {
+      map.getCanvas().style.cursor = "crosshair";
+      return;
+    }
+    if (!interactiveStyleIds.length) return;
+    const hits = map.queryRenderedFeatures(e.point, { layers: interactiveStyleIds.filter((id) => map.getLayer(id)) });
+    map.getCanvas().style.cursor = hits.length ? "pointer" : "";
+  });
+}
+
+function computeCityBounds(cityData) {
+  const feature = cityData?.features?.[0];
+  if (!feature?.geometry?.coordinates) return null;
+  const coords = [];
+  const walk = (c) => {
+    if (typeof c[0] === "number") coords.push(c);
+    else c.forEach(walk);
+  };
+  walk(feature.geometry.coordinates);
+  if (!coords.length) return null;
+  return coords.reduce(
+    (b, c) => b.extend(c),
+    new maplibregl.LngLatBounds(coords[0], coords[0])
+  );
+}
+
+function fitCityBounds(options = {}) {
+  if (!cityBounds) return;
+  map.fitBounds(cityBounds, { padding: 48, duration: 1200, ...options });
+}
+
+function setToolStatus(message, { sticky = false } = {}) {
+  const el = document.getElementById("tool-status");
+  if (!el) return;
+  if (!message) {
+    el.hidden = true;
+    el.textContent = "";
+    return;
+  }
+  el.hidden = false;
+  el.textContent = message;
+  if (!sticky) {
+    window.clearTimeout(setToolStatus._timer);
+    setToolStatus._timer = window.setTimeout(() => {
+      if (el.textContent === message && !measuring) {
+        el.hidden = true;
+      }
+    }, 4000);
   }
 }
 
@@ -1012,51 +1166,38 @@ map.on("load", async () => {
   renderPresets();
   renderLayerControls(catalog.layers);
 
-  setLoading(true, `Loading ${catalog.layers.length} layers…`);
+  const total = catalog.layers.length;
+  let done = 0;
   const loaded = await Promise.all(
     catalog.layers.map(async (layer) => {
-      const data = await loadGeoJSON(layer.path);
-      return { layer, data };
+      const result = await loadGeoJSON(layer.path);
+      done += 1;
+      setLoading(true, `Loading layers ${done}/${total}…`);
+      if (!result.ok) failedLayers.add(layer.id);
+      return { layer, data: result.data, ok: result.ok };
     })
   );
 
-  for (const { layer, data } of loaded) {
+  if (failedLayers.size) renderLayerControls(catalog.layers);
+
+  for (const { layer, data, ok } of loaded) {
+    if (!ok) continue;
     map.addSource(layer.id, { type: "geojson", data });
     const styleIds = addLayerStyles(layer);
     layer._styleIds = styleIds;
     setLayerVisibility(styleIds, layer.defaultVisible);
 
     if (layer.id === "addresses") buildSearchIndex(data);
+    if (layer.id === "city-boundary") cityBounds = computeCityBounds(data);
 
     for (const styleId of styleIds) {
       if (styleId.endsWith("-label")) continue;
-      map.on("click", styleId, (e) => {
-        const f = e.features?.[0];
-        if (!f) return;
-        const title =
-          f.properties?.district_name ||
-          f.properties?.district_code ||
-          f.properties?.name ||
-          f.properties?.address ||
-          f.properties?.parcel_id ||
-          f.properties?.PROP_ADDR ||
-          f.properties?.bridge_id ||
-          f.properties?.tract_id ||
-          f.properties?.shop ||
-          f.properties?.amenity ||
-          layer.name;
-        showFeature(title, f.properties);
-      });
-      map.on("mouseenter", styleId, () => {
-        map.getCanvas().style.cursor = "pointer";
-      });
-      map.on("mouseleave", styleId, () => {
-        map.getCanvas().style.cursor = "";
-      });
+      interactiveStyleIds.push(styleId);
     }
   }
 
   restackLayers();
+  setupFeatureInspect();
 
   document.querySelectorAll("input[data-layer]").forEach((input) => {
     input.addEventListener("change", () => {
@@ -1071,23 +1212,13 @@ map.on("load", async () => {
   if (urlState?.layers || urlState?.basemap || urlState?.z) {
     applyUrlState(urlState);
   } else {
-    const city = loaded.find((item) => item.layer.id === "city-boundary")?.data;
-    if (city?.features?.[0]) {
-      const coords = [];
-      const walk = (c) => {
-        if (typeof c[0] === "number") coords.push(c);
-        else c.forEach(walk);
-      };
-      walk(city.features[0].geometry.coordinates);
-      const bounds = coords.reduce(
-        (b, c) => b.extend(c),
-        new maplibregl.LngLatBounds(coords[0], coords[0])
-      );
-      map.fitBounds(bounds, { padding: 48, duration: 1200 });
-    }
+    fitCityBounds();
   }
 
   map.on("moveend", () => writeUrlState());
+  window.addEventListener("hashchange", () => {
+    applyUrlState(readUrlState());
+  });
   writeUrlState();
   setLoading(false);
 
@@ -1102,6 +1233,11 @@ map.on("load", async () => {
       status.hidden = false;
       status.textContent = "Copy the URL from the address bar.";
     }
+  });
+
+  document.getElementById("reset-view-btn")?.addEventListener("click", () => {
+    fitCityBounds();
+    setToolStatus("Returned to city overview.");
   });
 
   setupMapTools();
@@ -1124,13 +1260,11 @@ function setupMapTools() {
   const exportBtn = document.getElementById("export-png-btn");
   const measureBtn = document.getElementById("measure-btn");
   const clearBtn = document.getElementById("measure-clear-btn");
-  const measureStatus = document.getElementById("measure-status");
   const measureCoords = [];
-  let measuring = false;
 
   map.addSource("measure-line", {
     type: "geojson",
-    data: EMPTY_FC,
+    data: { type: "FeatureCollection", features: [] },
   });
   map.addLayer({
     id: "measure-line",
@@ -1146,7 +1280,7 @@ function setupMapTools() {
     id: "measure-points",
     type: "circle",
     source: "measure-line",
-    filter: ["==", "$type", "Point"],
+    filter: ["==", ["geometry-type"], "Point"],
     paint: {
       "circle-radius": 5,
       "circle-color": "#9a3412",
@@ -1174,15 +1308,14 @@ function setupMapTools() {
   function updateMeasure() {
     map.getSource("measure-line").setData(measureGeoJSON());
     if (!measureCoords.length) {
-      measureStatus.hidden = true;
-      measureStatus.textContent = "";
       clearBtn.hidden = true;
+      if (measuring) setToolStatus("Click the map to start measuring.", { sticky: true });
+      else setToolStatus("");
       return;
     }
     clearBtn.hidden = false;
-    measureStatus.hidden = false;
     if (measureCoords.length === 1) {
-      measureStatus.textContent = "Click another point to measure distance.";
+      setToolStatus("Click another point to measure distance.", { sticky: true });
       return;
     }
     let miles = 0;
@@ -1190,10 +1323,11 @@ function setupMapTools() {
       miles += haversineMiles(measureCoords[i - 1], measureCoords[i]);
     }
     const feet = miles * 5280;
-    measureStatus.textContent =
+    const text =
       feet < 5280
         ? `Distance: ${feet.toFixed(0)} ft (${miles.toFixed(3)} mi)`
         : `Distance: ${miles.toFixed(2)} mi (${feet.toFixed(0)} ft)`;
+    setToolStatus(text, { sticky: true });
   }
 
   function setMeasuring(on) {
@@ -1202,29 +1336,41 @@ function setupMapTools() {
     measureBtn.classList.toggle("active", on);
     map.getCanvas().style.cursor = on ? "crosshair" : "";
     if (on) {
-      measureStatus.hidden = false;
-      measureStatus.textContent = "Click the map to start measuring.";
+      featureCard.hidden = true;
+      setToolStatus("Click the map to start measuring.", { sticky: true });
     } else if (!measureCoords.length) {
-      measureStatus.hidden = true;
+      setToolStatus("");
     }
   }
 
   exportBtn.addEventListener("click", () => {
-    map.triggerRepaint();
-    requestAnimationFrame(() => {
-      const canvas = map.getCanvas();
-      const link = document.createElement("a");
-      link.download = `eminence-planning-map-${new Date().toISOString().slice(0, 10)}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-    });
+    setToolStatus("Preparing PNG…", { sticky: true });
+    const exportOnce = () => {
+      try {
+        const canvas = map.getCanvas();
+        const href = canvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.download = `eminence-planning-map-${new Date().toISOString().slice(0, 10)}.png`;
+        link.href = href;
+        link.click();
+        setToolStatus("PNG downloaded.");
+      } catch (err) {
+        console.warn("Export failed", err);
+        setToolStatus("Export blocked by tile CORS. Try the browser print dialog instead.");
+      }
+    };
+    if (map.loaded()) {
+      map.once("idle", exportOnce);
+      map.triggerRepaint();
+    } else {
+      exportOnce();
+    }
   });
 
   measureBtn.addEventListener("click", () => setMeasuring(!measuring));
   clearBtn.addEventListener("click", () => {
     measureCoords.length = 0;
     updateMeasure();
-    if (measuring) measureStatus.textContent = "Click the map to start measuring.";
   });
 
   map.on("click", (e) => {
@@ -1253,11 +1399,15 @@ toggle.addEventListener("click", () => {
 });
 backdrop?.addEventListener("click", () => setPanelOpen(false));
 
-if (window.matchMedia("(max-width: 900px)").matches) {
+const mobilePanelQuery = window.matchMedia("(max-width: 900px)");
+if (mobilePanelQuery.matches) {
   setPanelOpen(false);
 } else {
   setPanelOpen(true);
 }
+mobilePanelQuery.addEventListener("change", (e) => {
+  setPanelOpen(!e.matches);
+});
 
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
@@ -1288,6 +1438,7 @@ document.addEventListener("click", (e) => {
 
 document.getElementById("correction-form").addEventListener("submit", (e) => {
   e.preventDefault();
+  writeUrlState();
   const fd = new FormData(e.target);
   const subject = encodeURIComponent("Eminence map correction");
   const body = encodeURIComponent(
@@ -1298,6 +1449,8 @@ document.getElementById("correction-form").addEventListener("submit", (e) => {
       "",
       "Correction:",
       fd.get("message"),
+      "",
+      `Map link: ${location.href}`,
       "",
       "Sent from the Eminence Planning and Zoning Explorer (unofficial).",
     ].join("\n")

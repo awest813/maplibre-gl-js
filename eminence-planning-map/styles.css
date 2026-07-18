@@ -45,6 +45,7 @@ body {
   grid-template-rows: auto 1fr;
   height: 100%;
   min-height: 100dvh;
+  position: relative;
 }
 
 .brand-bar {
@@ -227,6 +228,10 @@ body {
 .status.partial,
 .status.estimated {
   color: var(--brass);
+}
+
+.status.failed {
+  color: var(--clay);
 }
 
 .sr-only {
@@ -440,6 +445,41 @@ body {
   background: transparent;
 }
 
+.tool-status {
+  margin-top: 0.15rem;
+  margin-bottom: 0;
+}
+
+.boot-error {
+  position: fixed;
+  inset: auto 1rem 1rem 1rem;
+  z-index: 20;
+  max-width: 28rem;
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+  background: #fffdf8;
+  border: 1px solid rgba(154, 52, 18, 0.35);
+  box-shadow: var(--shadow);
+}
+
+.boot-error[hidden] {
+  display: none;
+}
+
+.boot-error-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--clay);
+}
+
+.boot-error-detail {
+  margin: 0.35rem 0 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: rgba(28, 36, 24, 0.78);
+}
+
 .stat-card {
   padding: 0.55rem 0.65rem;
   border-radius: 8px;
@@ -569,10 +609,12 @@ body {
 
 .feature-card {
   position: absolute;
-  z-index: 2;
+  z-index: 5;
   left: 1rem;
   bottom: 1rem;
   width: min(320px, calc(100% - 2rem));
+  max-height: min(42vh, 360px);
+  overflow: auto;
   padding: 0.9rem 1rem 1rem;
   border-radius: var(--radius);
   background: rgba(255, 253, 248, 0.96);
@@ -662,6 +704,17 @@ body {
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @media (max-width: 900px) {
   .panel-toggle {
     display: inline-flex;
@@ -681,7 +734,7 @@ body {
     display: block;
     position: absolute;
     inset: 0;
-    z-index: 2;
+    z-index: 6;
     border: 0;
     background: rgba(28, 36, 24, 0.28);
     cursor: pointer;
@@ -693,7 +746,7 @@ body {
 
   .side-panel {
     position: absolute;
-    z-index: 3;
+    z-index: 7;
     inset: 0 0 0 auto;
     width: min(100%, 360px);
     transform: translateX(105%);
@@ -703,6 +756,13 @@ body {
 
   .side-panel.open {
     transform: translateX(0);
+  }
+
+  .feature-card {
+    z-index: 5;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    width: min(300px, calc(100% - 1.5rem));
   }
 
   #map {
