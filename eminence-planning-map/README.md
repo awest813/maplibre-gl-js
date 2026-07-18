@@ -21,7 +21,7 @@ This folder is the website root. All asset paths are relative.
 
 ### GitHub Pages (included workflow)
 
-The workflow [`.github/workflows/deploy-eminence-map.yml`](../.github/workflows/deploy-eminence-map.yml) publishes `eminence-planning-map/` to the `gh-pages` branch on pushes to `main` (or **Actions → Deploy Eminence planning map → Run workflow**).
+The workflow [`.github/workflows/deploy-eminence-map.yml`](../.github/workflows/deploy-eminence-map.yml) publishes `eminence-planning-map/` to the `gh-pages` branch on pushes to `main` (or **Actions → Deploy Eminence & New Castle planning map → Run workflow**).
 
 **One-time setup** (required — Actions cannot enable Pages without admin rights):
 

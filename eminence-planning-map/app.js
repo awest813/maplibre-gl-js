@@ -450,11 +450,10 @@ function addLayerStyles(layer) {
       source: id,
       minzoom: 11.2,
       layout: {
-        "text-field": ["get", "NAME"],
+        "text-field": ["coalesce", ["get", "label"], ["get", "NAME"], ["get", "name"], ""],
         "text-font": ["Noto Sans Regular"],
         "text-size": ["interpolate", ["linear"], ["zoom"], 11.2, 12, 14, 16],
-        "text-transform": "uppercase",
-        "text-letter-spacing": 0.04,
+        "text-letter-spacing": 0.02,
         "text-max-width": 10,
       },
       paint: {
@@ -848,12 +847,16 @@ function renderStats() {
     el.innerHTML = "<p class='hint'>Stats unavailable.</p>";
     return;
   }
+  const byMuni = Object.fromEntries(stats.addresses_by_muni || []);
+  const eminenceAddrs = Number(byMuni.Eminence) || 0;
+  const newCastleAddrs = Number(byMuni["New Castle"]) || 0;
   const items = [
-    [stats.city || "Eminence & New Castle", "Coverage"],
     [stats.parcels ?? 0, "Parcels"],
     [stats.zoning_polygons ?? 0, "Zoning polygons"],
     [stats.buildings, "Buildings"],
-    [stats.addresses, "Addresses"],
+    [stats.addresses, "Addresses (both)"],
+    [eminenceAddrs, "Eminence addresses"],
+    [newCastleAddrs, "New Castle addresses"],
     [stats.zero_improvement_parcels ?? 0, "Zero-improvement parcels"],
     [stats.public_exempt_parcels ?? 0, "Public / exempt parcels"],
   ];
@@ -937,7 +940,9 @@ function applyPreset(preset) {
     if (layer._styleIds) setLayerVisibility(layer._styleIds, on);
   }
   if (preset.basemap) setBasemap(preset.basemap);
-  if (Array.isArray(preset.center) && preset.center.length >= 2) {
+  if (preset.fitCities) {
+    fitCityBounds({ duration: 900 });
+  } else if (Array.isArray(preset.center) && preset.center.length >= 2) {
     map.easeTo({
       center: preset.center,
       zoom: typeof preset.zoom === "number" ? preset.zoom : map.getZoom(),
@@ -1316,8 +1321,14 @@ function runSearch(query) {
   const scored = [];
   for (const item of searchIndex) {
     const addr = item.address.toLowerCase();
-    if (!addr.includes(q)) continue;
-    const score = addr.startsWith(q) ? 0 : addr.split(/\s+/).some((w) => w.startsWith(q)) ? 1 : 2;
+    const muni = String(item.muni || "").toLowerCase();
+    const haystack = `${addr} ${muni}`.trim();
+    if (!haystack.includes(q) && !muni.includes(q)) continue;
+    let score = 3;
+    if (addr.startsWith(q)) score = 0;
+    else if (addr.split(/\s+/).some((w) => w.startsWith(q))) score = 1;
+    else if (muni && (muni === q || muni.startsWith(q))) score = 1;
+    else if (addr.includes(q)) score = 2;
     scored.push({ item, score });
   }
   scored.sort((a, b) => a.score - b.score || a.item.address.localeCompare(b.item.address));

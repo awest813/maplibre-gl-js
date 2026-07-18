@@ -11,8 +11,7 @@
       "id": "overview",
       "name": "Both cities",
       "basemap": "osm",
-      "center": [-85.1745, 38.397],
-      "zoom": 12.2,
+      "fitCities": true,
       "layers": ["city-boundary", "roads", "buildings", "streams", "waterbodies", "railroads", "schools"]
     },
     {

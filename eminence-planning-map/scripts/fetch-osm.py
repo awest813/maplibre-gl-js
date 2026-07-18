@@ -27,7 +27,7 @@ def overpass(query: str) -> dict:
             req = urllib.request.Request(
                 url,
                 data=body,
-                headers={"User-Agent": "EminencePlanningMap/1.0"},
+                headers={"User-Agent": "HenryCountyPlanningMap/1.0 (Eminence+NewCastle)"},
             )
             with urllib.request.urlopen(req, timeout=120) as resp:
                 return json.loads(resp.read().decode())

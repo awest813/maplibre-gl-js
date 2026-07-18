@@ -129,13 +129,16 @@ def main() -> None:
             "f": "geojson",
         },
     )
-    write_geojson(
-        DATA / "city-boundary.geojson",
-        slim_features(
-            city,
-            ["NAME", "FIPS", "COUNTY", "INCORP", "CLASS", "Area_SqMiles", "POP2010", "LAST_UPDT", "CITYFIPS"],
-        ),
+    city = slim_features(
+        city,
+        ["NAME", "FIPS", "COUNTY", "INCORP", "CLASS", "Area_SqMiles", "POP2010", "LAST_UPDT", "CITYFIPS"],
     )
+    for feat in city.get("features", []):
+        name = (feat.get("properties") or {}).get("NAME") or ""
+        feat.setdefault("properties", {})["label"] = " ".join(
+            part.capitalize() for part in name.lower().split()
+        )
+    write_geojson(DATA / "city-boundary.geojson", city)
 
     print("Roads…")
     roads = query(f"{base}/Ky_911_Road_Centerlines_WGS84WM/MapServer/0/query", bbox_params(BBOX))

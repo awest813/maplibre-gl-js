@@ -123,12 +123,13 @@ summary {
 .brand-name {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(1.55rem, 3.1vw, 2.35rem);
+  font-size: clamp(1.45rem, 2.9vw, 2.2rem);
   font-weight: 700;
-  line-height: 0.95;
-  max-width: 14ch;
+  line-height: 0.98;
+  max-width: 16ch;
   letter-spacing: -0.02em;
   color: var(--field);
+  text-wrap: balance;
 }
 
 .product-title {
@@ -710,9 +711,10 @@ summary {
 .stat-card strong {
   display: block;
   font-family: var(--font-display);
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   color: var(--field);
-  line-height: 1.1;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 
 .stat-card span {
@@ -1041,7 +1043,8 @@ summary {
   }
 
   .brand-name {
-    font-size: clamp(1.7rem, 8vw, 2.2rem);
+    font-size: clamp(1.35rem, 6.4vw, 1.85rem);
+    max-width: 15ch;
   }
 
   .map-hud {
