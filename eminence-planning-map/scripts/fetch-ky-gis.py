@@ -1,0 +1,210 @@
+#!/usr/bin/env python3
+"""Refresh Eminence base layers from Kentucky / public ArcGIS services."""
+
+from __future__ import annotations
+
+import json
+import re
+import urllib.parse
+import urllib.request
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+DATA = ROOT / "data"
+
+BBOX = {
+    "xmin": -85.21,
+    "ymin": 38.34,
+    "xmax": -85.14,
+    "ymax": 38.39,
+    "spatialReference": {"wkid": 4326},
+}
+
+CITY_URL = (
+    "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/"
+    "Ky_CityBnd_Polygon_WGS84WM/MapServer/0/query"
+)
+ROADS_URL = (
+    "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/"
+    "Ky_911_Road_Centerlines_WGS84WM/MapServer/0/query"
+)
+ADDR_URL = (
+    "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/"
+    "Ky_911_Site_Structure_Address_Points_WGS84WM/MapServer/0/query"
+)
+BUILD_URL = (
+    "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/"
+    "Ky_ORNL_Building_Footprints_WGS84WM/MapServer/0/query"
+)
+STREAMS_URL = (
+    "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/"
+    "Ky_24K_NHD_Blueline_Streams_WGS84WM/MapServer/0/query"
+)
+WATER_URL = (
+    "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/"
+    "Ky_24K_NHD_Waterbodies_WGS84WM/MapServer/0/query"
+)
+FLOOD_URL = (
+    "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/"
+    "USA_Flood_Hazard_Reduced_Set_gdb/FeatureServer/0/query"
+)
+
+
+def query(url: str, params: dict) -> dict:
+    full = url + "?" + urllib.parse.urlencode(params)
+    with urllib.request.urlopen(full, timeout=180) as resp:
+        return json.loads(resp.read().decode())
+
+
+def bbox_params(out_fields: str = "*", record_count: int = 5000) -> dict:
+    return {
+        "where": "1=1",
+        "geometry": json.dumps(BBOX),
+        "geometryType": "esriGeometryEnvelope",
+        "inSR": "4326",
+        "spatialRel": "esriSpatialRelIntersects",
+        "outFields": out_fields,
+        "returnGeometry": "true",
+        "f": "geojson",
+        "resultRecordCount": str(record_count),
+    }
+
+
+def write_geojson(path: Path, fc: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(fc, separators=(",", ":")))
+    print(f"wrote {path.name}: {len(fc.get('features', []))} features, {path.stat().st_size} bytes")
+
+
+def slim_features(fc: dict, keep: list[str], enrich=None) -> dict:
+    for feat in fc.get("features", []):
+        props = feat.get("properties") or {}
+        new_props = {k: props.get(k) for k in keep if props.get(k) not in (None, "")}
+        if enrich:
+            new_props.update(enrich(props))
+        feat["properties"] = new_props
+    return fc
+
+
+def road_enrich(props: dict) -> dict:
+    parts = [props.get("St_PreDir"), props.get("St_Name"), props.get("St_PosTyp") or props.get("St_PosMod")]
+    name = " ".join(x for x in parts if x)
+    full = name.upper()
+    kind = "local"
+    if re.search(r"\bKY\b|\bUS\b|HIGHWAY|HWY", full):
+        kind = "state"
+    if (props.get("St_PosTyp") or "").lower() == "alley":
+        kind = "alley"
+    return {"name": name or props.get("St_Name") or "", "kind": kind, "muni": props.get("IncMuni_L") or ""}
+
+
+def addr_enrich(props: dict) -> dict:
+    num = props.get("Add_Number")
+    parts = [
+        str(num) if num not in (None, "") else None,
+        props.get("St_PreDir"),
+        props.get("St_Name"),
+        props.get("St_PosTyp"),
+    ]
+    address = " ".join(str(x) for x in parts if x)
+    return {
+        "address": address,
+        "muni": props.get("Inc_Muni") or "",
+        "zip": props.get("Post_Code") or "",
+    }
+
+
+def fetch_paginated(url: str, out_fields: str, page: int = 1000) -> dict:
+    features = []
+    offset = 0
+    while True:
+        params = bbox_params(out_fields, page)
+        params["resultOffset"] = str(offset)
+        params["orderByFields"] = "OBJECTID ASC"
+        chunk = query(url, params)
+        if "error" in chunk:
+            raise RuntimeError(chunk["error"])
+        feats = chunk.get("features", [])
+        features.extend(feats)
+        print(f"  offset {offset}: {len(feats)}")
+        if len(feats) < page:
+            break
+        offset += len(feats)
+    return {"type": "FeatureCollection", "features": features}
+
+
+def main() -> None:
+    DATA.mkdir(parents=True, exist_ok=True)
+
+    print("City boundary…")
+    city = query(
+        CITY_URL,
+        {
+            "where": "NAME LIKE '%EMINENCE%'",
+            "outFields": "NAME,FIPS,COUNTY,INCORP,CLASS,Area_SqMiles,POP2010,LAST_UPDT,CITYFIPS",
+            "returnGeometry": "true",
+            "f": "geojson",
+        },
+    )
+    write_geojson(DATA / "city-boundary.geojson", slim_features(city, [
+        "NAME", "FIPS", "COUNTY", "INCORP", "CLASS", "Area_SqMiles", "POP2010", "LAST_UPDT", "CITYFIPS"
+    ]))
+
+    print("Roads…")
+    roads = query(ROADS_URL, bbox_params("*"))
+    write_geojson(
+        DATA / "roads.geojson",
+        slim_features(
+            roads,
+            ["St_Name", "St_PreDir", "St_PosTyp", "IncMuni_L", "SpeedLimit", "OneWay", "DateUpdate"],
+            road_enrich,
+        ),
+    )
+
+    print("Addresses…")
+    addrs = query(ADDR_URL, bbox_params("*"))
+    write_geojson(
+        DATA / "addresses.geojson",
+        slim_features(
+            addrs,
+            ["Add_Number", "St_Name", "St_PreDir", "St_PosTyp", "Inc_Muni", "Post_Code", "Place_Type", "DateUpdate"],
+            addr_enrich,
+        ),
+    )
+
+    print("Buildings…")
+    buildings = fetch_paginated(
+        BUILD_URL,
+        "OBJECTID,BUILD_ID,OCC_CLS,PRIM_OCC,PROP_ADDR,PROP_CITY,HEIGHT,SQFEET,PROD_DATE,SOURCE",
+    )
+    write_geojson(
+        DATA / "buildings.geojson",
+        slim_features(
+            buildings,
+            ["BUILD_ID", "OCC_CLS", "PRIM_OCC", "PROP_ADDR", "PROP_CITY", "HEIGHT", "SQFEET", "PROD_DATE", "SOURCE"],
+        ),
+    )
+
+    print("Streams…")
+    streams = query(STREAMS_URL, bbox_params("OBJECTID,GNIS_Name,FType,FCode"))
+    write_geojson(DATA / "streams.geojson", slim_features(streams, ["OBJECTID", "GNIS_Name", "FType", "FCode"]))
+
+    print("Waterbodies…")
+    water = query(WATER_URL, bbox_params("OBJECTID,GNIS_Name,FType,FCode,AreaSqKm"))
+    write_geojson(
+        DATA / "waterbodies.geojson",
+        slim_features(water, ["OBJECTID", "GNIS_Name", "FType", "FCode", "AreaSqKm"]),
+    )
+
+    print("Flood hazards…")
+    flood = query(FLOOD_URL, bbox_params("OBJECTID,FLD_ZONE,ZONE_SUBTY,SFHA_TF", 2000))
+    write_geojson(
+        DATA / "flood-hazards.geojson",
+        slim_features(flood, ["FLD_ZONE", "ZONE_SUBTY", "SFHA_TF"]),
+    )
+
+    print("Done.")
+
+
+if __name__ == "__main__":
+    main()
