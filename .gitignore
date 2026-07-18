@@ -45,3 +45,5 @@ npm-debug.log
 *.iml
 /.vs/
 .*.swp
+__pycache__/
+*.pyc

@@ -1,0 +1,64 @@
+{
+  "generated": "2026-07-18",
+  "city": "Eminence",
+  "buildings": 1789,
+  "addresses": 1555,
+  "roads": 269,
+  "schools": 7,
+  "bridges": 20,
+  "unbuilt_addresses": 84,
+  "unaddressed_buildings": 208,
+  "building_occupancy": [
+    [
+      "Unknown",
+      1789
+    ]
+  ],
+  "notes": "Vacancy hints are heuristics from free public GIS, not official condemned/vacant lists.",
+  "osm_amenities": 12,
+  "osm_shops": 7,
+  "missing_sidewalk_hints": 159,
+  "mapped_sidewalk_ways": 2,
+  "parcels": 1502,
+  "zoning_polygons": 67,
+  "zoning_codes": [
+    [
+      "B2",
+      23
+    ],
+    [
+      "R1",
+      11
+    ],
+    [
+      "R2",
+      8
+    ],
+    [
+      "R3",
+      6
+    ],
+    [
+      "B3",
+      6
+    ],
+    [
+      "A2",
+      5
+    ],
+    [
+      "B1",
+      5
+    ],
+    [
+      "I1",
+      2
+    ],
+    [
+      "I2",
+      1
+    ]
+  ],
+  "public_exempt_parcels": 42,
+  "zero_improvement_parcels": 175
+}
