@@ -453,15 +453,25 @@ def main() -> None:
     )
     for feat in nursing.get("features", []):
         p = feat.get("properties") or {}
-        name = p.get("PlaceName") or p.get("LongLabel") or p.get("ShortLabel") or "Care facility"
-        if isinstance(name, str) and "," in name:
+        name = (
+            p.get("USER_Facility")
+            or p.get("PlaceName")
+            or p.get("LongLabel")
+            or p.get("ShortLabel")
+            or "Care facility"
+        )
+        if isinstance(name, str) and "," in name and not p.get("USER_Facility"):
             name = name.split(",")[0].strip()
+        beds = p.get("USER_CertifiedBeds")
         feat["properties"] = clean_props(
             {
                 "name": name,
-                "address": p.get("Place_addr") or p.get("Match_addr"),
-                "phone": p.get("Phone"),
-                "type": p.get("Type") or "Nursing / assisted living",
+                "address": p.get("USER_Address") or p.get("Place_addr") or p.get("Match_addr"),
+                "phone": p.get("USER_Telephone") or p.get("Phone"),
+                "certified_beds": beds if beds not in (None, "x", "") else None,
+                "type": "Nursing / assisted living",
+                "city": titleish(p.get("City")),
+                "county": titleish(p.get("USER_County") or p.get("Subregion")),
             }
         )
     write_geojson(DATA / "nursing-homes.geojson", nursing)
