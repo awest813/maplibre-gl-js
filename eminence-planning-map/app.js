@@ -90,12 +90,16 @@ const LEGEND = [
 
 const EMPTY_FC = { type: "FeatureCollection", features: [] };
 
-function setLoading(visible, detail) {
+function setLoading(visible, detail, progress) {
   const el = document.getElementById("loading");
   const detailEl = document.getElementById("loading-detail");
+  const bar = document.getElementById("loading-bar");
   if (!el) return;
   el.hidden = !visible;
   if (detail && detailEl) detailEl.textContent = detail;
+  if (bar && typeof progress === "number") {
+    bar.style.width = `${Math.max(6, Math.min(100, progress))}%`;
+  }
 }
 
 function showBootError(message) {
@@ -254,10 +258,13 @@ map.on("error", (e) => {
 const featureCard = document.getElementById("feature-card");
 const featureTitle = document.getElementById("feature-title");
 const featureAttrs = document.getElementById("feature-attrs");
+const featureKicker = document.getElementById("feature-kicker");
+const mapHint = document.getElementById("map-hint");
 let searchIndex = [];
 let searchMarker = null;
 let measuring = false;
 let cityBounds = null;
+let hasInspectedFeature = false;
 const interactiveStyleIds = [];
 const failedLayers = new Set();
 
@@ -265,8 +272,9 @@ document.getElementById("feature-close").addEventListener("click", () => {
   featureCard.hidden = true;
 });
 
-function showFeature(title, props) {
+function showFeature(title, props, layerName = "") {
   featureTitle.textContent = title;
+  if (featureKicker) featureKicker.textContent = layerName || "";
   featureAttrs.innerHTML = "";
   const notes = [];
   if (props?.hint) notes.push(String(props.hint));
@@ -303,6 +311,8 @@ function showFeature(title, props) {
     featureAttrs.appendChild(note);
   }
   featureCard.hidden = false;
+  hasInspectedFeature = true;
+  if (mapHint && !measuring) mapHint.hidden = true;
 }
 
 async function loadGeoJSON(path) {
@@ -793,6 +803,13 @@ function currentBasemapId() {
   return checked?.value || defaultBasemap;
 }
 
+function syncBasemapRows(basemapId) {
+  document.querySelectorAll(".basemap-row").forEach((row) => {
+    const input = row.querySelector('input[name="basemap"]');
+    row.classList.toggle("active", input?.value === basemapId);
+  });
+}
+
 function setBasemap(basemapId) {
   for (const bm of catalog.basemaps || []) {
     const styleId = `basemap-${bm.id}`;
@@ -802,6 +819,7 @@ function setBasemap(basemapId) {
   }
   const radio = document.querySelector(`input[name="basemap"][value="${basemapId}"]`);
   if (radio) radio.checked = true;
+  syncBasemapRows(basemapId);
 }
 
 function renderBasemapControls() {
@@ -809,7 +827,7 @@ function renderBasemapControls() {
   el.innerHTML = "";
   for (const bm of catalog.basemaps || []) {
     const row = document.createElement("label");
-    row.className = "basemap-row";
+    row.className = `basemap-row${bm.id === defaultBasemap ? " active" : ""}`;
     row.innerHTML = `
       <input type="radio" name="basemap" value="${bm.id}" ${bm.id === defaultBasemap ? "checked" : ""} />
       <span>${bm.name}</span>
@@ -830,13 +848,18 @@ function applyPreset(preset) {
   for (const layer of catalog.layers) {
     const on = enabled.has(layer.id);
     const checkbox = document.querySelector(`input[data-layer="${layer.id}"]`);
-    if (checkbox) checkbox.checked = on;
+    if (checkbox) {
+      checkbox.checked = on;
+      syncLayerRowState(checkbox);
+    }
     if (layer._styleIds) setLayerVisibility(layer._styleIds, on);
   }
   if (preset.basemap) setBasemap(preset.basemap);
   document.querySelectorAll(".preset-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.preset === preset.id);
   });
+  updateLayerCount();
+  openFoldsForActiveLayers();
   writeUrlState();
 }
 
@@ -957,15 +980,41 @@ function applyUrlState(state) {
     for (const layer of catalog.layers) {
       const on = enabled.has(layer.id);
       const checkbox = document.querySelector(`input[data-layer="${layer.id}"]`);
-      if (checkbox) checkbox.checked = on;
+      if (checkbox) {
+        checkbox.checked = on;
+        syncLayerRowState(checkbox);
+      }
       if (layer._styleIds) setLayerVisibility(layer._styleIds, on);
     }
+    updateLayerCount();
   }
   const z = Number(state.z);
   const lng = Number(state.lng);
   const lat = Number(state.lat);
   if (Number.isFinite(z) && Number.isFinite(lng) && Number.isFinite(lat)) {
     map.jumpTo({ center: [lng, lat], zoom: z });
+  }
+}
+
+function openFoldsForActiveLayers() {
+  const groupToFold = {
+    base: "layers-base",
+    planning: "layers-planning",
+    community: "layers-community",
+    utilities: "layers-utilities",
+    places: "layers-places",
+    analysis: "layers-analysis",
+  };
+  for (const [group, listId] of Object.entries(groupToFold)) {
+    const list = document.getElementById(listId);
+    const fold = list?.closest("details");
+    if (!fold) continue;
+    const hasOn = catalog.layers.some(
+      (layer) =>
+        layer.group === group &&
+        document.querySelector(`input[data-layer="${layer.id}"]`)?.checked
+    );
+    if (hasOn) fold.open = true;
   }
 }
 
@@ -985,6 +1034,19 @@ function layerStatusMeta(layer) {
   return { status: "ready", statusLabel: "Free data" };
 }
 
+function updateLayerCount() {
+  const label = document.getElementById("layer-count-label");
+  if (!label) return;
+  const inputs = [...document.querySelectorAll("input[data-layer]:not(:disabled)")];
+  const on = inputs.filter((input) => input.checked).length;
+  label.textContent = `${on} of ${inputs.length} layers on`;
+}
+
+function syncLayerRowState(input) {
+  const row = input.closest(".layer-row");
+  if (row) row.classList.toggle("on", input.checked);
+}
+
 function renderLayerControls(layers) {
   for (const id of Object.values(GROUP_TARGETS)) {
     document.getElementById(id).innerHTML = "";
@@ -995,7 +1057,8 @@ function renderLayerControls(layers) {
   for (const layer of layers) {
     const targetId = GROUP_TARGETS[layer.group] || "layers-base";
     const row = document.createElement("div");
-    row.className = "layer-row";
+    const on = !!layer.defaultVisible && !failedLayers.has(layer.id);
+    row.className = `layer-row${on ? " on" : ""}`;
     const { status, statusLabel } = layerStatusMeta(layer);
     row.innerHTML = `
       <label>
@@ -1015,6 +1078,7 @@ function renderLayerControls(layers) {
       ${layer.notes ? `<br /><span>${escapeHtml(layer.notes)}</span>` : ""}`;
     sourceEl.appendChild(li);
   }
+  updateLayerCount();
 }
 
 function featureTitleFrom(props, fallback) {
@@ -1049,7 +1113,7 @@ function setupFeatureInspect() {
       return;
     }
     const layer = styleIdToLayer(f.layer.id);
-    showFeature(featureTitleFrom(f.properties, layer?.name), f.properties);
+    showFeature(featureTitleFrom(f.properties, layer?.name), f.properties, layer?.name || "");
   });
 
   map.on("mousemove", (e) => {
@@ -1090,15 +1154,18 @@ function setToolStatus(message, { sticky = false } = {}) {
   if (!message) {
     el.hidden = true;
     el.textContent = "";
+    if (mapHint && !hasInspectedFeature && !measuring) mapHint.hidden = false;
     return;
   }
   el.hidden = false;
   el.textContent = message;
+  if (mapHint) mapHint.hidden = true;
   if (!sticky) {
     window.clearTimeout(setToolStatus._timer);
     setToolStatus._timer = window.setTimeout(() => {
       if (el.textContent === message && !measuring) {
         el.hidden = true;
+        if (mapHint && !hasInspectedFeature) mapHint.hidden = false;
       }
     }, 4000);
   }
@@ -1154,12 +1221,12 @@ function flyToAddress(item) {
     .setPopup(new maplibregl.Popup().setText(item.address))
     .addTo(map);
   searchMarker.togglePopup();
-  showFeature(item.address, { address: item.address, muni: item.muni });
+  showFeature(item.address, { address: item.address, muni: item.muni }, "Address");
 }
 
 map.on("load", async () => {
   const urlState = readUrlState();
-  setLoading(true, "Fetching free public layers…");
+  setLoading(true, "Fetching free public layers…", 10);
   renderStats();
   renderLegend();
   renderBasemapControls();
@@ -1172,7 +1239,7 @@ map.on("load", async () => {
     catalog.layers.map(async (layer) => {
       const result = await loadGeoJSON(layer.path);
       done += 1;
-      setLoading(true, `Loading layers ${done}/${total}…`);
+      setLoading(true, `Loading layers ${done}/${total}…`, 10 + (done / total) * 85);
       if (!result.ok) failedLayers.add(layer.id);
       return { layer, data: result.data, ok: result.ok };
     })
@@ -1200,11 +1267,14 @@ map.on("load", async () => {
   setupFeatureInspect();
 
   document.querySelectorAll("input[data-layer]").forEach((input) => {
+    syncLayerRowState(input);
     input.addEventListener("change", () => {
       const layer = catalog.layers.find((l) => l.id === input.dataset.layer);
       if (!layer?._styleIds) return;
       setLayerVisibility(layer._styleIds, input.checked);
+      syncLayerRowState(input);
       document.querySelectorAll(".preset-btn").forEach((btn) => btn.classList.remove("active"));
+      updateLayerCount();
       writeUrlState();
     });
   });
@@ -1215,12 +1285,17 @@ map.on("load", async () => {
     fitCityBounds();
   }
 
+  document.querySelectorAll("input[data-layer]").forEach(syncLayerRowState);
+  updateLayerCount();
+
   map.on("moveend", () => writeUrlState());
   window.addEventListener("hashchange", () => {
     applyUrlState(readUrlState());
+    document.querySelectorAll("input[data-layer]").forEach(syncLayerRowState);
+    updateLayerCount();
   });
   writeUrlState();
-  setLoading(false);
+  setLoading(false, "Ready", 100);
 
   document.getElementById("share-btn").addEventListener("click", async () => {
     writeUrlState();
@@ -1337,9 +1412,13 @@ function setupMapTools() {
     map.getCanvas().style.cursor = on ? "crosshair" : "";
     if (on) {
       featureCard.hidden = true;
+      if (mapHint) mapHint.hidden = true;
       setToolStatus("Click the map to start measuring.", { sticky: true });
     } else if (!measureCoords.length) {
       setToolStatus("");
+    } else {
+      // Keep last measurement visible briefly when turning measure off.
+      setToolStatus(document.getElementById("tool-status")?.textContent || "");
     }
   }
 
@@ -1386,17 +1465,20 @@ function setupMapTools() {
 
 const panel = document.getElementById("side-panel");
 const toggle = document.getElementById("panel-toggle");
+const panelClose = document.getElementById("panel-close");
 const backdrop = document.getElementById("panel-backdrop");
 
 function setPanelOpen(open) {
   panel.classList.toggle("open", open);
   toggle.setAttribute("aria-expanded", String(open));
+  toggle.textContent = open ? "Close" : "Layers";
   if (backdrop) backdrop.hidden = !open || !window.matchMedia("(max-width: 900px)").matches;
 }
 
 toggle.addEventListener("click", () => {
   setPanelOpen(!panel.classList.contains("open"));
 });
+panelClose?.addEventListener("click", () => setPanelOpen(false));
 backdrop?.addEventListener("click", () => setPanelOpen(false));
 
 const mobilePanelQuery = window.matchMedia("(max-width: 900px)");
