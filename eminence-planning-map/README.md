@@ -54,11 +54,11 @@ Upload the contents of `eminence-planning-map/` (not the whole MapLibre repo) to
 
 ## Free layers
 
-**Base:** Henry County, city limits, streets, addresses, buildings, streams, waterbodies, flood hazards  
+**Base:** Henry County, city limits, streets, addresses, buildings, streams, waterbodies, flood hazards, wetlands, sinkholes, groundwater sensitivity  
 **Planning:** zoning/land-use districts (`HenryCoZoning` / `Landuse_Henry`), parcels without owner names  
-**Community:** railroads, bridges, schools, walking buffers, school districts, fire response areas, census tracts  
+**Community:** railroads, bridges, schools, walking buffers, school districts, fire/EMS/law response areas, fire & police stations, courthouses, libraries, health centers, parks/open space, census tracts & block groups, magisterial districts, airports  
 **Utilities:** wastewater plant, wastewater projects, water tanks, water projects (generalized—not pipe networks)  
-**Places (OSM):** sidewalks/paths, parks, parking, civic/food amenities, shops  
+**Places (OSM + regional):** sidewalks/paths, parks, parking, civic/food amenities, shops, EV chargers  
 **Analysis:** public/exempt parcels; zero-improvement parcels; unbuilt-address hints; unaddressed-building hints; possible missing sidewalks  
 
 **Basemaps:** OpenStreetMap · Kentucky NAIP 2022 aerial tiles
@@ -80,6 +80,7 @@ Useful MapLibre ecosystem references: [awesome-maplibre](https://github.com/mapl
 ```bash
 python3 scripts/fetch-ky-gis.py
 python3 scripts/fetch-henry-gis.py
+python3 scripts/fetch-extra-gis.py
 python3 scripts/fetch-osm.py
 ```
 

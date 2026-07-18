@@ -47,10 +47,15 @@ const PROP_LABELS = {
   shop: "Shop",
   bridge_id: "Bridge ID",
   tract_id: "Census tract",
+  block_group_id: "Block group",
   pop_2020: "Population (2020)",
   POP2010: "Population (2010)",
   near_school: "Near school",
   muni: "Municipality",
+  wetland_type: "Wetland type",
+  sensitivity: "Sensitivity",
+  sensitivity_label: "Sensitivity",
+  population: "Population",
   COUNTY: "County",
   INCORP: "Incorporated",
   LAST_UPDT: "Last updated",
@@ -99,22 +104,57 @@ const LEGEND = [
   { label: "Agricultural districts", color: "#8a9a6d", kind: "fill" },
   { label: "Buildings", color: "#6b5b4a", kind: "fill" },
   { label: "Flood hazard", color: "#c45c26", kind: "fill" },
+  { label: "Wetlands", color: "#2f6f6a", kind: "fill" },
   { label: "Public / exempt parcels", color: "#0f766e", kind: "fill" },
+  { label: "Civic facilities", color: "#9a6b2f", kind: "dot" },
   { label: "Vacancy / sidewalk hints", color: "#b45309", kind: "dot" },
 ];
 
 /** Higher score = preferred when features overlap under the cursor. */
 function inspectPriority(styleId) {
   if (!styleId) return 0;
-  if (styleId.startsWith("addresses") || styleId.startsWith("schools") || styleId.startsWith("bridges")) return 100;
+  if (
+    styleId.startsWith("addresses") ||
+    styleId.startsWith("schools") ||
+    styleId.startsWith("bridges") ||
+    styleId.startsWith("fire-stations") ||
+    styleId.startsWith("police-stations") ||
+    styleId.startsWith("libraries") ||
+    styleId.startsWith("courthouses") ||
+    styleId.startsWith("health-centers") ||
+    styleId.startsWith("ems-agencies") ||
+    styleId.startsWith("ev-chargers") ||
+    styleId.startsWith("airports")
+  ) {
+    return 100;
+  }
   if (styleId.startsWith("osm-") || styleId.startsWith("wwtp") || styleId.startsWith("water-tanks")) return 95;
   if (styleId.startsWith("analysis-")) return 90;
   if (styleId.startsWith("henry-landuse-zoning")) return 85;
   if (styleId.startsWith("parcels")) return 80;
   if (styleId.startsWith("buildings")) return 70;
   if (styleId.startsWith("ww-") || styleId.startsWith("water-improvements")) return 65;
-  if (styleId.startsWith("flood") || styleId.startsWith("school-buffers")) return 40;
-  if (styleId.startsWith("roads") || styleId.startsWith("railroads") || styleId.startsWith("streams")) return 35;
+  if (
+    styleId.startsWith("flood") ||
+    styleId.startsWith("wetlands") ||
+    styleId.startsWith("sinkholes") ||
+    styleId.startsWith("school-buffers")
+  ) {
+    return 40;
+  }
+  if (
+    styleId.startsWith("roads") ||
+    styleId.startsWith("railroads") ||
+    styleId.startsWith("streams") ||
+    styleId.startsWith("groundwater") ||
+    styleId.startsWith("ems-districts") ||
+    styleId.startsWith("law-districts") ||
+    styleId.startsWith("fire-districts") ||
+    styleId.startsWith("magisterial") ||
+    styleId.startsWith("census-")
+  ) {
+    return 35;
+  }
   if (styleId.startsWith("city-boundary")) return 8;
   if (styleId.startsWith("henry-county")) return 4;
   return 20;
@@ -558,6 +598,47 @@ function addLayerStyles(layer) {
     return fillLine(id, "#c45c26", "#9a3f14", 0.28);
   }
 
+  if (id === "wetlands") {
+    return fillLine(id, "#2f6f6a", "#1f4f4b", 0.35);
+  }
+
+  if (id === "sinkholes") {
+    return fillLine(id, "#7c3a2d", "#5c291f", 0.4);
+  }
+
+  if (id === "groundwater-sensitivity") {
+    map.addLayer({
+      id: `${id}-fill`,
+      type: "fill",
+      source: id,
+      paint: {
+        "fill-color": [
+          "match",
+          ["to-string", ["get", "sensitivity"]],
+          "1",
+          "#d9e0d2",
+          "2",
+          "#b7c7a8",
+          "3",
+          "#e9c46a",
+          "4",
+          "#e07a3d",
+          "5",
+          "#b45309",
+          "#c4b59a",
+        ],
+        "fill-opacity": 0.28,
+      },
+    });
+    map.addLayer({
+      id: `${id}-line`,
+      type: "line",
+      source: id,
+      paint: { "line-color": "#6b5b4a", "line-width": 1 },
+    });
+    return [`${id}-fill`, `${id}-line`];
+  }
+
   if (id === "railroads") {
     map.addLayer({
       id: `${id}-line`,
@@ -622,8 +703,56 @@ function addLayerStyles(layer) {
     return fillLine(id, "#b45309", "#9a3412", 0.08);
   }
 
+  if (id === "fire-stations") {
+    return pointStyle(id, "#b45309", 7);
+  }
+
+  if (id === "police-stations") {
+    return pointStyle(id, "#1d4e89", 7);
+  }
+
+  if (id === "law-districts") {
+    return fillLine(id, "#1d4e89", "#163a66", 0.08);
+  }
+
+  if (id === "ems-districts") {
+    return fillLine(id, "#9a3412", "#7f1d1d", 0.08);
+  }
+
+  if (id === "ems-agencies") {
+    return pointStyle(id, "#9a3412", 7);
+  }
+
+  if (id === "courthouses") {
+    return pointStyle(id, "#2f4a32", 7);
+  }
+
+  if (id === "libraries") {
+    return pointStyle(id, "#9a6b2f", 7);
+  }
+
+  if (id === "health-centers") {
+    return pointStyle(id, "#0f766e", 7);
+  }
+
+  if (id === "parks-open-space") {
+    return fillLine(id, "#4a6b4e", "#2f4a32", 0.28);
+  }
+
   if (id === "census-tracts") {
     return fillLine(id, "#3d6f7a", "#3d6f7a", 0.1);
+  }
+
+  if (id === "census-block-groups") {
+    return fillLine(id, "#5b8a8f", "#3d6f7a", 0.1);
+  }
+
+  if (id === "magisterial-districts") {
+    return fillLine(id, "#9a6b2f", "#7a5224", 0.08);
+  }
+
+  if (id === "airports") {
+    return pointStyle(id, "#57534e", 7);
   }
 
   if (id === "wwtp" || id === "water-tanks") {
@@ -825,6 +954,10 @@ function addLayerStyles(layer) {
     return pointStyle(id, "#b45309", 5);
   }
 
+  if (id === "ev-chargers") {
+    return pointStyle(id, "#15803d", 7);
+  }
+
   map.addLayer({
     id: `${id}-line`,
     type: "line",
@@ -978,16 +1111,32 @@ function restackLayers() {
   const underBuildings = [
     "henry-county-fill",
     "henry-county-line",
+    "groundwater-sensitivity-fill",
+    "groundwater-sensitivity-line",
     "flood-hazards-fill",
     "flood-hazards-line",
+    "wetlands-fill",
+    "wetlands-line",
+    "sinkholes-fill",
+    "sinkholes-line",
     "school-districts-fill",
     "school-districts-line",
+    "magisterial-districts-fill",
+    "magisterial-districts-line",
     "fire-districts-fill",
     "fire-districts-line",
+    "ems-districts-fill",
+    "ems-districts-line",
+    "law-districts-fill",
+    "law-districts-line",
     "census-tracts-fill",
     "census-tracts-line",
+    "census-block-groups-fill",
+    "census-block-groups-line",
     "school-buffers-fill",
     "school-buffers-line",
+    "parks-open-space-fill",
+    "parks-open-space-line",
     "henry-landuse-zoning-fill",
     "henry-landuse-zoning-line",
     "parcels-fill",
@@ -1014,6 +1163,14 @@ function restackLayers() {
     "addresses-circle",
     "bridges-circle",
     "schools-circle",
+    "fire-stations-circle",
+    "police-stations-circle",
+    "ems-agencies-circle",
+    "courthouses-circle",
+    "libraries-circle",
+    "health-centers-circle",
+    "airports-circle",
+    "ev-chargers-circle",
     "wwtp-circle",
     "water-tanks-circle",
     "ww-improvements-circle",

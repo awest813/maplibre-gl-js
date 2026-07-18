@@ -42,7 +42,14 @@ jobs:
           cat = json.loads(Path("eminence-planning-map/layers.json").read_text())
           preset_ids = {p["id"] for p in cat.get("presets", [])}
           assert "new-castle" in preset_ids and "eminence" in preset_ids, preset_ids
-          print("dual-city bundle checks passed")
+          layer_ids = {layer["id"] for layer in cat.get("layers", [])}
+          for required in ("wetlands", "fire-stations", "police-stations", "courthouses"):
+              assert required in layer_ids, required
+              path = Path("eminence-planning-map") / next(
+                  layer["path"] for layer in cat["layers"] if layer["id"] == required
+              )
+              assert path.exists(), path
+          print("dual-city + expanded-data bundle checks passed")
           PY
 
       - name: Publish to gh-pages
