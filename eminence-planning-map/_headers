@@ -1,0 +1,27 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+
+/
+  Cache-Control: public, max-age=300
+
+/index.html
+  Cache-Control: public, max-age=300
+
+/app.js
+  Cache-Control: public, max-age=300
+
+/styles.css
+  Cache-Control: public, max-age=300
+
+/layers.json
+  Cache-Control: public, max-age=300
+
+/data/stats.json
+  Cache-Control: public, max-age=300
+  Content-Type: application/json
+
+/data/*.geojson
+  Cache-Control: public, max-age=3600
+  Content-Type: application/geo+json

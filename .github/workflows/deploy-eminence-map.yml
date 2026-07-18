@@ -1,0 +1,53 @@
+name: Deploy Eminence planning map
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "eminence-planning-map/**"
+      - ".github/workflows/deploy-eminence-map.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: eminence-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy static site
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Verify static site bundle
+        run: |
+          set -euo pipefail
+          test -f eminence-planning-map/index.html
+          test -f eminence-planning-map/app.js
+          test -f eminence-planning-map/layers.json
+          test -f eminence-planning-map/data/city-boundary.geojson
+          test -f eminence-planning-map/data/parcels.geojson
+          test -f eminence-planning-map/.nojekyll
+          # Fail loudly if publish folder accidentally contains a JS build step dependency.
+          test ! -e eminence-planning-map/package.json
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: eminence-planning-map
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

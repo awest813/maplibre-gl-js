@@ -1,6 +1,6 @@
 # Eminence Planning and Zoning Explorer
 
-Unofficial public planning tool for **Eminence, Kentucky**. Uses **only free, publicly accessible GIS data**—including public Henry County ArcGIS parcel and zoning/land-use layers.
+Unofficial public planning tool for **Eminence, Kentucky**. Static site — no build step, no backend. Uses free public GIS (Kentucky GIS, OpenStreetMap, Henry County ArcGIS).
 
 > Not an official city or county product. Confirm zoning currency with Planning & Zoning. Analysis layers are heuristics. Parcel owner names are omitted.
 
@@ -12,6 +12,41 @@ python3 -m http.server 8080
 ```
 
 Open http://localhost:8080/
+
+Any static file server works (`npx serve .`, Caddy, nginx, etc.).
+
+## Deploy (static hosting)
+
+This folder is the website root. All asset paths are relative.
+
+### GitHub Pages (included workflow)
+
+1. Merge to `main`.
+2. In the repo: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+3. The workflow [`.github/workflows/deploy-eminence-map.yml`](../.github/workflows/deploy-eminence-map.yml) publishes `eminence-planning-map/` on pushes to `main` (or run **Actions → Deploy Eminence planning map → Run workflow**).
+
+Site URL will look like:
+
+`https://<user>.github.io/<repo>/`
+
+### Cloudflare Pages
+
+- **Framework preset:** None
+- **Root directory:** `eminence-planning-map`
+- **Build command:** leave empty
+- **Build output directory:** `/` (or `.`)
+
+`_headers` in this folder sets cache and GeoJSON content types.
+
+### Netlify
+
+- **Base directory:** `eminence-planning-map`
+- **Build command:** none / use `netlify.toml`
+- **Publish directory:** `.` (relative to base)
+
+### Manual / any static host
+
+Upload the contents of `eminence-planning-map/` (not the whole MapLibre repo) to your host’s web root.
 
 ## Free layers
 
@@ -26,13 +61,12 @@ Open http://localhost:8080/
 
 ## Features
 
-- Quick-view presets (Overview, Zoning districts, Walkability, Vacancy hints, Public land, Utilities, Places)
-- Shareable URL hash (center, zoom, basemap, visible layers)
+- Quick-view presets and shareable URL hash
 - Address search, loading state, Escape-to-close panel/details
-- Stats, legend, readable feature inspector (currency/acres formatting)
+- Stats, legend, readable feature inspector
 - Correction form (`contactEmail` in `layers.json`)
 
-## Refresh free data
+## Refresh free data (local / maintainer)
 
 ```bash
 python3 scripts/fetch-ky-gis.py
@@ -40,6 +74,17 @@ python3 scripts/fetch-henry-gis.py
 python3 scripts/fetch-osm.py
 ```
 
+Then commit updated GeoJSON under `data/` and redeploy.
+
 ## Important caveat
 
-The public `HenryCoZoning` service exposes a layer named **Landuse_Henry** with district codes (A2, R1–R3, B1–B3, I1–I2). Treat it as **unofficial until Henry County confirms** it is current zoning (vs. land use / an outdated extract). Optional request templates: `docs/data-requests.md`.
+The public `HenryCoZoning` service exposes a layer named **Landuse_Henry**. Treat it as unofficial until Henry County confirms it is current zoning. Verification templates: [docs/data-requests.html](docs/data-requests.html).
+
+## Runtime dependencies (CDN)
+
+Loaded at runtime from the public internet (no npm install required to host):
+
+- MapLibre GL JS 4.7.1 (unpkg)
+- MapLibre demo glyphs
+- Google Fonts (Fraunces, Sora)
+- Basemap tiles: OpenStreetMap and/or Kentucky NAIP 2022

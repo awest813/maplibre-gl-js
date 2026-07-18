@@ -1,0 +1,18 @@
+{
+  "name": "Eminence Planning and Zoning Explorer",
+  "short_name": "Eminence Map",
+  "description": "Unofficial public planning tool for Eminence, Kentucky.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3eee4",
+  "theme_color": "#2f4a32",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
