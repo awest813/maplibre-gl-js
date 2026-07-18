@@ -1,0 +1,18 @@
+{
+  "name": "Eminence & New Castle Planning and Zoning Explorer",
+  "short_name": "Henry Planning Map",
+  "description": "Unofficial public planning tool for Eminence and New Castle, Kentucky.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3eee4",
+  "theme_color": "#2f4a32",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

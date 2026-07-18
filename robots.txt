@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+# This is an unofficial public planning tool, not an official city/county GIS site.

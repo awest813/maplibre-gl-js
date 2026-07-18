@@ -1,0 +1,128 @@
+{
+  "generated": "2026-07-18",
+  "city": "Eminence & New Castle",
+  "cities": [
+    "Eminence",
+    "New Castle"
+  ],
+  "buildings": 2965,
+  "addresses": 2360,
+  "addresses_by_muni": [
+    [
+      "Eminence",
+      1325
+    ],
+    [
+      "unknown",
+      573
+    ],
+    [
+      "New Castle",
+      434
+    ],
+    [
+      "Unincorporated",
+      28
+    ]
+  ],
+  "roads": 422,
+  "schools": 9,
+  "bridges": 27,
+  "unbuilt_addresses": 84,
+  "unaddressed_buildings": 451,
+  "building_occupancy": [
+    [
+      "Unknown",
+      2965
+    ]
+  ],
+  "notes": "Vacancy hints are heuristics from free public GIS, not official condemned/vacant lists.",
+  "public_exempt_parcels": 78,
+  "zero_improvement_parcels": 329,
+  "parcels": 2389,
+  "zoning_polygons": 98,
+  "zoning_codes": [
+    [
+      "B2",
+      29
+    ],
+    [
+      "R1",
+      19
+    ],
+    [
+      "R2",
+      14
+    ],
+    [
+      "A2",
+      10
+    ],
+    [
+      "R3",
+      9
+    ],
+    [
+      "B3",
+      8
+    ],
+    [
+      "B1",
+      6
+    ],
+    [
+      "I1",
+      2
+    ],
+    [
+      "I2",
+      1
+    ]
+  ],
+  "missing_sidewalk_hints": 243,
+  "mapped_sidewalk_ways": 13,
+  "osm_amenities": 15,
+  "osm_shops": 8,
+  "wetlands": 552,
+  "sinkholes": 3,
+  "groundwater_regions": 3,
+  "census_block_groups": 10,
+  "fire_stations": 4,
+  "police_stations": 3,
+  "libraries": 1,
+  "parks_open_space": 4,
+  "courthouses": 2,
+  "health_centers": 2,
+  "ev_chargers": 1,
+  "magisterial_districts": 6,
+  "airports": 3,
+  "wetland_types": [
+    [
+      "Freshwater Pond",
+      372
+    ],
+    [
+      "Riverine",
+      151
+    ],
+    [
+      "Freshwater Emergent Wetland",
+      22
+    ],
+    [
+      "Freshwater Forested/Shrub Wetland",
+      7
+    ]
+  ],
+  "nursing_homes": 3,
+  "public_housing": 1,
+  "brownfields": 2,
+  "industrial_parks": 1,
+  "traffic_counts": 17,
+  "trails": 3,
+  "voting_precincts": 14,
+  "social_vulnerability_areas": 4,
+  "broadband_areas": 7,
+  "dams": 11,
+  "priority_watersheds": 8
+}

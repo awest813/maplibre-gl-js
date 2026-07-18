@@ -1,0 +1,1009 @@
+{
+  "title": "Eminence & New Castle Planning and Zoning Explorer",
+  "subtitle": "Unofficial public planning tool",
+  "contactEmail": "awest40709@ucumberlands.edu",
+  "disclaimer": "This map uses free, publicly accessible GIS data (Kentucky GIS, OpenStreetMap, and public Henry County ArcGIS layers) for Eminence and New Castle, Kentucky. It is an unofficial planning tool. The HenryCoZoning service layer is named Landuse_Henry\u2014confirm with Planning & Zoning before treating it as official current zoning. Parcel owner names are omitted. Analysis layers are heuristics.",
+  "center": [
+    -85.1745,
+    38.397
+  ],
+  "zoom": 12.2,
+  "bounds": [
+    -85.21,
+    38.34,
+    -85.14,
+    38.45
+  ],
+  "presets": [
+    {
+      "id": "overview",
+      "name": "Both cities",
+      "basemap": "osm",
+      "fitCities": true,
+      "layers": [
+        "city-boundary",
+        "roads",
+        "buildings",
+        "streams",
+        "waterbodies",
+        "railroads",
+        "schools"
+      ]
+    },
+    {
+      "id": "eminence",
+      "name": "Eminence",
+      "basemap": "osm",
+      "center": [
+        -85.1805,
+        38.3645
+      ],
+      "zoom": 13.2,
+      "layers": [
+        "city-boundary",
+        "roads",
+        "buildings",
+        "streams",
+        "waterbodies",
+        "railroads",
+        "schools"
+      ]
+    },
+    {
+      "id": "new-castle",
+      "name": "New Castle",
+      "basemap": "osm",
+      "center": [
+        -85.1685,
+        38.4336
+      ],
+      "zoom": 14.1,
+      "layers": [
+        "city-boundary",
+        "roads",
+        "buildings",
+        "streams",
+        "waterbodies",
+        "railroads",
+        "schools"
+      ]
+    },
+    {
+      "id": "zoning",
+      "name": "Zoning districts",
+      "basemap": "osm",
+      "layers": [
+        "city-boundary",
+        "roads",
+        "henry-landuse-zoning",
+        "parcels"
+      ]
+    },
+    {
+      "id": "walkability",
+      "name": "Walkability",
+      "basemap": "osm",
+      "layers": [
+        "city-boundary",
+        "roads",
+        "schools",
+        "school-buffers",
+        "osm-sidewalks",
+        "osm-parks",
+        "analysis-missing-sidewalks"
+      ]
+    },
+    {
+      "id": "vacancy",
+      "name": "Vacancy hints",
+      "basemap": "ky-naip-2022",
+      "layers": [
+        "city-boundary",
+        "roads",
+        "buildings",
+        "parcels",
+        "analysis-zero-improvement-parcels",
+        "analysis-unbuilt-addresses"
+      ]
+    },
+    {
+      "id": "public-land",
+      "name": "Public / exempt land",
+      "basemap": "osm",
+      "layers": [
+        "city-boundary",
+        "roads",
+        "parcels",
+        "analysis-public-exempt-parcels",
+        "schools"
+      ]
+    },
+    {
+      "id": "utilities",
+      "name": "Utilities",
+      "basemap": "osm",
+      "layers": [
+        "city-boundary",
+        "roads",
+        "wwtp",
+        "ww-improvements",
+        "water-tanks",
+        "water-improvements",
+        "flood-hazards",
+        "water-pump-stations",
+        "sewer-planning-units"
+      ]
+    },
+    {
+      "id": "places",
+      "name": "Places & parking",
+      "basemap": "osm",
+      "layers": [
+        "city-boundary",
+        "roads",
+        "buildings",
+        "osm-amenities",
+        "osm-shops",
+        "osm-parking",
+        "osm-parks"
+      ]
+    },
+    {
+      "id": "hazards",
+      "name": "Hazards & environment",
+      "basemap": "osm",
+      "layers": [
+        "city-boundary",
+        "roads",
+        "flood-hazards",
+        "wetlands",
+        "sinkholes",
+        "groundwater-sensitivity",
+        "streams",
+        "waterbodies",
+        "priority-watersheds",
+        "sinkhole-drainage",
+        "karst-potential",
+        "dams"
+      ]
+    },
+    {
+      "id": "civic",
+      "name": "Civic services",
+      "basemap": "osm",
+      "layers": [
+        "city-boundary",
+        "roads",
+        "fire-stations",
+        "police-stations",
+        "courthouses",
+        "libraries",
+        "health-centers",
+        "ems-agencies",
+        "schools",
+        "fire-districts",
+        "law-districts",
+        "voting-precincts",
+        "nursing-homes",
+        "public-housing"
+      ]
+    },
+    {
+      "id": "housing",
+      "name": "Housing & care",
+      "basemap": "osm",
+      "layers": [
+        "city-boundary",
+        "roads",
+        "parcels",
+        "public-housing",
+        "nursing-homes",
+        "analysis-public-exempt-parcels",
+        "schools",
+        "health-centers"
+      ]
+    },
+    {
+      "id": "mobility",
+      "name": "Mobility",
+      "basemap": "osm",
+      "layers": [
+        "city-boundary",
+        "roads",
+        "traffic-counts",
+        "trails",
+        "railroads",
+        "bridges",
+        "osm-sidewalks",
+        "ev-chargers",
+        "airports"
+      ]
+    },
+    {
+      "id": "redevelopment",
+      "name": "Redevelopment",
+      "basemap": "ky-naip-2022",
+      "layers": [
+        "city-boundary",
+        "roads",
+        "parcels",
+        "brownfields",
+        "industrial-parks",
+        "henry-landuse-zoning",
+        "analysis-zero-improvement-parcels"
+      ]
+    }
+  ],
+  "basemaps": [
+    {
+      "id": "osm",
+      "name": "Streets (OpenStreetMap)",
+      "type": "raster",
+      "tiles": [
+        "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+      ],
+      "tileSize": 256,
+      "attribution": "\u00a9 OpenStreetMap contributors",
+      "default": true
+    },
+    {
+      "id": "ky-naip-2022",
+      "name": "Aerial (KY NAIP 2022)",
+      "type": "raster",
+      "tiles": [
+        "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Imagery_2022_2FT_WGS84WM/MapServer/tile/{z}/{y}/{x}"
+      ],
+      "tileSize": 256,
+      "attribution": "Kentucky DGI / NAIP 2022",
+      "maxzoom": 19
+    }
+  ],
+  "layers": [
+    {
+      "id": "city-boundary",
+      "name": "City limits",
+      "group": "boundaries",
+      "path": "data/city-boundary.geojson",
+      "defaultVisible": true,
+      "source": "Kentucky DGI \u2014 Corporate Boundary Polygons (Eminence & New Castle)",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_CityBnd_Polygon_WGS84WM/MapServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis",
+      "notes": "Includes incorporated limits for Eminence and New Castle in Henry County."
+    },
+    {
+      "id": "henry-county",
+      "name": "Henry County",
+      "group": "boundaries",
+      "path": "data/henry-county.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky county boundaries",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_CountyShading_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "parcels",
+      "name": "Parcels (no owner names)",
+      "group": "boundaries",
+      "path": "data/parcels.geojson",
+      "defaultVisible": false,
+      "source": "Public HenryCoParcels FeatureServer",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/HenryCoParcels/FeatureServer/13",
+      "updated": "2026-07-18",
+      "verification_status": "public_arcgis_unverified_currency",
+      "notes": "Owner names intentionally omitted from the public extract."
+    },
+    {
+      "id": "school-districts",
+      "name": "School districts",
+      "group": "boundaries",
+      "path": "data/school-districts.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky school districts",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_School_Districts_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "magisterial-districts",
+      "name": "Magisterial districts",
+      "group": "boundaries",
+      "path": "data/magisterial-districts.geojson",
+      "defaultVisible": false,
+      "source": "Henry County magisterial districts",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/HenryCoPrecincts/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "voting-precincts",
+      "name": "Voting precincts (2023)",
+      "group": "boundaries",
+      "path": "data/voting-precincts.geojson",
+      "defaultVisible": false,
+      "source": "Henry County voting precincts 2023",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/HenryPecincts2023/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "census-tracts",
+      "name": "Census tracts (2020)",
+      "group": "boundaries",
+      "path": "data/census-tracts.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky Census Tracts 2020",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Census_Tracts_2020_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "census-block-groups",
+      "name": "Census block groups (2020)",
+      "group": "boundaries",
+      "path": "data/census-block-groups.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky Census Block Groups 2020",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Census_Block_Groups_2020_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "streams",
+      "name": "Streams",
+      "group": "environment",
+      "path": "data/streams.geojson",
+      "defaultVisible": true,
+      "source": "Kentucky 24K NHD Blueline Streams",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_24K_NHD_Blueline_Streams_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "waterbodies",
+      "name": "Waterbodies",
+      "group": "environment",
+      "path": "data/waterbodies.geojson",
+      "defaultVisible": true,
+      "source": "Kentucky 24K NHD Waterbodies",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_24K_NHD_Waterbodies_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "flood-hazards",
+      "name": "Flood hazards",
+      "group": "environment",
+      "path": "data/flood-hazards.geojson",
+      "defaultVisible": false,
+      "source": "Esri USA Flood Hazard Reduced Set (FEMA-derived)",
+      "sourceUrl": "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Flood_Hazard_Reduced_Set_gdb/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis",
+      "notes": "Confirm with official FEMA NFHL for regulatory decisions."
+    },
+    {
+      "id": "wetlands",
+      "name": "Wetlands",
+      "group": "environment",
+      "path": "data/wetlands.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky water resources \u2014 wetlands",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_WaterResources_Polygons_WGS84WM/MapServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis",
+      "notes": "NWI-derived wetland polygons. Confirm with USFWS NWI for regulatory work."
+    },
+    {
+      "id": "sinkholes",
+      "name": "Sinkholes",
+      "group": "environment",
+      "path": "data/sinkholes.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky water resources \u2014 sinkholes",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_WaterResources_Polygons_WGS84WM/MapServer/1",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "sinkhole-drainage",
+      "name": "Sinkhole drainage areas",
+      "group": "environment",
+      "path": "data/sinkhole-drainage.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky water resources \u2014 sinkhole drainage",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_WaterResources_Polygons_WGS84WM/MapServer/2",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "karst-potential",
+      "name": "Karst potential",
+      "group": "environment",
+      "path": "data/karst-potential.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA HMP karst potential",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/Karst_Potential_KIPDA_HMP/FeatureServer/2",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "groundwater-sensitivity",
+      "name": "Groundwater sensitivity",
+      "group": "environment",
+      "path": "data/groundwater-sensitivity.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky groundwater sensitivity regions",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Groundwater_Sensitivity_Regions_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "priority-watersheds",
+      "name": "Priority watersheds",
+      "group": "environment",
+      "path": "data/priority-watersheds.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky DOW priority watersheds",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_DOW_Priority_Watersheds_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "dams",
+      "name": "Regulated dams",
+      "group": "environment",
+      "path": "data/dams.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA DOW regulated dams",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/DOW_Regulated_Dams_KIPDA/FeatureServer/1",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "henry-landuse-zoning",
+      "name": "Zoning / land-use districts",
+      "group": "planning",
+      "path": "data/henry-landuse-zoning.geojson",
+      "defaultVisible": false,
+      "source": "Public HenryCoZoning FeatureServer (layer Landuse_Henry)",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/HenryCoZoning/FeatureServer/19",
+      "updated": "2026-07-18",
+      "verification_status": "public_arcgis_unverified_currency",
+      "notes": "Free public layer with district codes A2/B1\u2013B3/R1\u2013R3/I1\u2013I2. Service title says zoning; layer name says land use. Confirm official status and currency with Henry County Planning & Zoning."
+    },
+    {
+      "id": "brownfields",
+      "name": "Brownfield sites",
+      "group": "planning",
+      "path": "data/brownfields.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA CED brownfield sites",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/CED_Brownfield_Sites/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "industrial-parks",
+      "name": "Industrial parks",
+      "group": "planning",
+      "path": "data/industrial-parks.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA industrial parks",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/Kipda_Industrial_parks/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "sewer-planning-units",
+      "name": "Sewer planning units",
+      "group": "planning",
+      "path": "data/sewer-planning-units.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA wastewater sewer planning units",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/Wastewater_Systems/FeatureServer/9",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis",
+      "notes": "Generalized service-planning geography\u2014not pipe networks."
+    },
+    {
+      "id": "social-vulnerability",
+      "name": "Social vulnerability",
+      "group": "planning",
+      "path": "data/social-vulnerability.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA Social Vulnerability Index",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/KIPDA_Social_Vulnerability_Index/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis",
+      "notes": "CDC/ATSDR-derived SVI geography via KIPDA. Interpret carefully."
+    },
+    {
+      "id": "broadband",
+      "name": "Broadband access",
+      "group": "planning",
+      "path": "data/broadband.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA regional broadband (KY ZIP areas)",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/KIPDA_Region_Broadband_KY/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "fire-stations",
+      "name": "Fire stations",
+      "group": "safety",
+      "path": "data/fire-stations.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA / regional fire department points",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/Fire_Departments/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "police-stations",
+      "name": "Police stations",
+      "group": "safety",
+      "path": "data/police-stations.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA / regional police department points",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/Police_Departments/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "ems-agencies",
+      "name": "EMS agencies",
+      "group": "safety",
+      "path": "data/ems-agencies.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA EMS agency points",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/EMS_Agencies/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "courthouses",
+      "name": "Courthouses",
+      "group": "safety",
+      "path": "data/courthouses.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA courthouse points",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/Courthouses/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "health-centers",
+      "name": "Health centers",
+      "group": "safety",
+      "path": "data/health-centers.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA health department points",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/Health_Department/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "nursing-homes",
+      "name": "Nursing / assisted living",
+      "group": "safety",
+      "path": "data/nursing-homes.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA nursing home and assisted living facilities",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/Nursing_Home_and_Assisted_Living_Facilities/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "fire-districts",
+      "name": "Fire response areas",
+      "group": "safety",
+      "path": "data/fire-districts.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky 911 fire response service boundaries",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_911_RSB_Fire_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "law-districts",
+      "name": "Law response areas",
+      "group": "safety",
+      "path": "data/law-districts.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky 911 law response service boundaries",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_911_RSB_Law_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "ems-districts",
+      "name": "EMS response areas",
+      "group": "safety",
+      "path": "data/ems-districts.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky 911 EMS response service boundaries",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_911_RSB_EMS_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "schools",
+      "name": "Schools",
+      "group": "community",
+      "path": "data/schools.geojson",
+      "defaultVisible": true,
+      "source": "Kentucky public schools",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Schools_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "school-buffers",
+      "name": "School walking areas",
+      "group": "community",
+      "path": "data/school-buffers.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky public school buffers",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Public_School_Buffers_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "libraries",
+      "name": "Libraries",
+      "group": "community",
+      "path": "data/libraries.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA library points",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/Libraries/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "parks-open-space",
+      "name": "Parks & open space",
+      "group": "community",
+      "path": "data/parks-open-space.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA parks and open spaces",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/Parks_and_Open_Spaces/FeatureServer/3",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis",
+      "notes": "Regional park/open-space polygons; naming attributes are sparse."
+    },
+    {
+      "id": "public-housing",
+      "name": "Public housing",
+      "group": "community",
+      "path": "data/public-housing.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA public housing developments",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/Public_Housing_Developments/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "airports",
+      "name": "Airports / airstrips",
+      "group": "community",
+      "path": "data/airports.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky airports",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Airports_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis",
+      "notes": "Private and public airfields in Henry County."
+    },
+    {
+      "id": "roads",
+      "name": "Streets",
+      "group": "mobility",
+      "path": "data/roads.geojson",
+      "defaultVisible": true,
+      "source": "Kentucky 911 Road Centerlines",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_911_Road_Centerlines_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "buildings",
+      "name": "Building footprints",
+      "group": "mobility",
+      "path": "data/buildings.geojson",
+      "defaultVisible": true,
+      "source": "ORNL / Kentucky statewide building footprints",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_ORNL_Building_Footprints_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "railroads",
+      "name": "Railroads",
+      "group": "mobility",
+      "path": "data/railroads.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky railroads (DGI)",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Railroads_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "bridges",
+      "name": "Bridges",
+      "group": "mobility",
+      "path": "data/bridges.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky bridge points",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Bridge_Points_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "traffic-counts",
+      "name": "Traffic counts",
+      "group": "mobility",
+      "path": "data/traffic-counts.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA traffic counts 2024",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/KIPDA_TrafficCounts2024/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "osm-sidewalks",
+      "name": "Mapped sidewalks / paths (OSM)",
+      "group": "mobility",
+      "path": "data/osm-sidewalks.geojson",
+      "defaultVisible": false,
+      "source": "OpenStreetMap footways / cycleways",
+      "sourceUrl": "https://www.openstreetmap.org/copyright",
+      "updated": "2026-07-18",
+      "verification_status": "community_mapped",
+      "notes": "Community-mapped; coverage is incomplete."
+    },
+    {
+      "id": "trails",
+      "name": "Trails / multi-use paths",
+      "group": "mobility",
+      "path": "data/trails.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA multi-use paths / trails",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/MultiUsePath/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "ev-chargers",
+      "name": "EV chargers",
+      "group": "mobility",
+      "path": "data/ev-chargers.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA EV charging stations (KY)",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/EV_ChargeStation_KIPDA_KY/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "wwtp",
+      "name": "Wastewater plant",
+      "group": "utilities",
+      "path": "data/wwtp.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky wastewater treatment plants (WRIS)",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Wastewater_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis",
+      "notes": "Generalized plant location/capacity\u2014not detailed sewer infrastructure."
+    },
+    {
+      "id": "water-tanks",
+      "name": "Water tanks",
+      "group": "utilities",
+      "path": "data/water-tanks.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky water tanks (WRIS)",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Water_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "water-pump-stations",
+      "name": "Water pump stations",
+      "group": "utilities",
+      "path": "data/water-pump-stations.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA water system pump stations",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/Water_System_Data/FeatureServer/2",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis",
+      "notes": "Generalized facility points\u2014not valve/line detail."
+    },
+    {
+      "id": "ww-improvements",
+      "name": "Wastewater projects",
+      "group": "utilities",
+      "path": "data/ww-improvements.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky proposed wastewater improvements",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Wastewater_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "water-improvements",
+      "name": "Water projects",
+      "group": "utilities",
+      "path": "data/water-improvements.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky proposed water improvements",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Water_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "addresses",
+      "name": "Address points",
+      "group": "places",
+      "path": "data/addresses.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky 911 Site/Structure Address Points",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_911_Site_Structure_Address_Points_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "osm-amenities",
+      "name": "Civic & food amenities (OSM)",
+      "group": "places",
+      "path": "data/osm-amenities.geojson",
+      "defaultVisible": false,
+      "source": "OpenStreetMap",
+      "sourceUrl": "https://www.openstreetmap.org/copyright",
+      "updated": "2026-07-18",
+      "verification_status": "community_mapped"
+    },
+    {
+      "id": "osm-shops",
+      "name": "Shops (OSM)",
+      "group": "places",
+      "path": "data/osm-shops.geojson",
+      "defaultVisible": false,
+      "source": "OpenStreetMap",
+      "sourceUrl": "https://www.openstreetmap.org/copyright",
+      "updated": "2026-07-18",
+      "verification_status": "community_mapped"
+    },
+    {
+      "id": "osm-parks",
+      "name": "Parks & recreation (OSM)",
+      "group": "places",
+      "path": "data/osm-parks.geojson",
+      "defaultVisible": false,
+      "source": "OpenStreetMap",
+      "sourceUrl": "https://www.openstreetmap.org/copyright",
+      "updated": "2026-07-18",
+      "verification_status": "community_mapped"
+    },
+    {
+      "id": "osm-parking",
+      "name": "Parking (OSM)",
+      "group": "places",
+      "path": "data/osm-parking.geojson",
+      "defaultVisible": false,
+      "source": "OpenStreetMap",
+      "sourceUrl": "https://www.openstreetmap.org/copyright",
+      "updated": "2026-07-18",
+      "verification_status": "community_mapped"
+    },
+    {
+      "id": "analysis-public-exempt-parcels",
+      "name": "Public / exempt parcels",
+      "group": "analysis",
+      "path": "data/analysis-public-exempt-parcels.geojson",
+      "defaultVisible": false,
+      "source": "Derived from HenryCoParcels CLASS codes",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/HenryCoParcels/FeatureServer/13",
+      "updated": "2026-07-18",
+      "verification_status": "estimated",
+      "notes": "Exempt city/county/state/federal/educational/religious/other classes. Not a verified public-land inventory."
+    },
+    {
+      "id": "analysis-zero-improvement-parcels",
+      "name": "Zero-improvement parcels",
+      "group": "analysis",
+      "path": "data/analysis-zero-improvement-parcels.geojson",
+      "defaultVisible": false,
+      "source": "Derived from HenryCoParcels assessment fields",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/HenryCoParcels/FeatureServer/13",
+      "updated": "2026-07-18",
+      "verification_status": "estimated",
+      "notes": "Land value > 0 and improvement value = 0. Heuristic vacant-land signal only."
+    },
+    {
+      "id": "analysis-unbuilt-addresses",
+      "name": "Addresses without buildings",
+      "group": "analysis",
+      "path": "data/analysis-unbuilt-addresses.geojson",
+      "defaultVisible": false,
+      "source": "Derived from KY 911 addresses + ORNL buildings",
+      "sourceUrl": "https://kygisserver.ky.gov/gis/pages/default.aspx",
+      "updated": "2026-07-18",
+      "verification_status": "estimated",
+      "notes": "Heuristic: Eminence and New Castle addresses with no building footprint within ~50m. Not an official vacant-lot list."
+    },
+    {
+      "id": "analysis-unaddressed-buildings",
+      "name": "Larger buildings without addresses",
+      "group": "analysis",
+      "path": "data/analysis-unaddressed-buildings.geojson",
+      "defaultVisible": false,
+      "source": "Derived from KY 911 addresses + ORNL buildings",
+      "sourceUrl": "https://kygisserver.ky.gov/gis/pages/default.aspx",
+      "updated": "2026-07-18",
+      "verification_status": "estimated",
+      "notes": "Heuristic: buildings \u2265800 sqft with no address within ~55m. May include accessory structures."
+    },
+    {
+      "id": "analysis-missing-sidewalks",
+      "name": "Possible missing sidewalks",
+      "group": "analysis",
+      "path": "data/analysis-missing-sidewalks.geojson",
+      "defaultVisible": false,
+      "source": "Derived from KY roads + OSM sidewalks",
+      "sourceUrl": "https://www.openstreetmap.org/copyright",
+      "updated": "2026-07-18",
+      "verification_status": "estimated",
+      "notes": "Heuristic: main/school-area roads with no OSM sidewalk/footway nearby. OSM sidewalk mapping in both towns is sparse."
+    }
+  ],
+  "groups": [
+    {
+      "id": "boundaries",
+      "label": "Boundaries",
+      "hint": "City limits, parcels, districts, census"
+    },
+    {
+      "id": "environment",
+      "label": "Environment",
+      "hint": "Water, flood, wetlands, karst"
+    },
+    {
+      "id": "planning",
+      "label": "Planning",
+      "hint": "Zoning, sewer planning, vulnerability"
+    },
+    {
+      "id": "safety",
+      "label": "Safety & services",
+      "hint": "Fire, EMS, police, health"
+    },
+    {
+      "id": "community",
+      "label": "Community",
+      "hint": "Schools, parks, libraries, housing"
+    },
+    {
+      "id": "mobility",
+      "label": "Mobility",
+      "hint": "Roads, trails, sidewalks, buildings"
+    },
+    {
+      "id": "utilities",
+      "label": "Utilities",
+      "hint": "Plants, tanks, improvement projects"
+    },
+    {
+      "id": "places",
+      "label": "Places",
+      "hint": "Addresses, amenities, parking"
+    },
+    {
+      "id": "analysis",
+      "label": "Analysis",
+      "hint": "Heuristic overlays\u2014not official inventories"
+    }
+  ]
+}

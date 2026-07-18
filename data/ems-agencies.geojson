@@ -1,0 +1,1 @@
+{"type":"FeatureCollection","crs":{"type":"name","properties":{"name":"EPSG:4326"}},"features":[{"type":"Feature","id":2,"geometry":{"type":"Point","coordinates":[-85.1642879190018,38.4264682390029]},"properties":{"name":"Henry County EMS","address":"716 S Property Rd, Eminence, Kentucky, 40019"}}]}

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Data request templates · Eminence & New Castle Planning Map</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Sora:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #1c2418;
+      --field: #2f4a32;
+      --paper: #f3eee4;
+      --line: rgba(28, 36, 24, 0.14);
+    }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Sora", sans-serif;
+      background:
+        radial-gradient(900px 400px at 0% 0%, rgba(74, 107, 78, 0.2), transparent 55%),
+        linear-gradient(165deg, #d9e0d2, var(--paper) 50%);
+      line-height: 1.55;
+    }
+    main {
+      max-width: 44rem;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+    }
+    a { color: #3d6f7a; font-weight: 600; }
+    h1, h2 {
+      font-family: "Fraunces", Georgia, serif;
+      color: var(--field);
+    }
+    h1 { font-size: clamp(1.8rem, 4vw, 2.4rem); margin-bottom: 0.4rem; }
+    .back { display: inline-block; margin-bottom: 1.25rem; }
+    .card {
+      background: rgba(255, 253, 248, 0.92);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 1rem 1.1rem;
+      margin: 1rem 0;
+    }
+    blockquote {
+      margin: 0;
+      padding: 0.85rem 1rem;
+      border-left: 3px solid var(--field);
+      background: rgba(47, 74, 50, 0.06);
+      white-space: pre-wrap;
+      font-size: 0.92rem;
+    }
+    ul { padding-left: 1.2rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="back" href="../">← Back to map</a>
+    <h1>Data request templates</h1>
+    <p>
+      The live map already loads free public <code>HenryCoZoning</code> /
+      <code>HenryCoParcels</code> layers for Eminence and New Castle. Use these
+      templates to confirm whether <code>Landuse_Henry</code> is authoritative
+      current zoning and to request amendment history / metadata.
+    </p>
+
+    <section class="card">
+      <h2>Henry County Planning and Zoning</h2>
+      <p>
+        <strong>Contact:</strong> Jason Stanley<br />
+        19 South Property Road · 502-845-5707, ext. 2<br />
+        <a href="https://henrycounty.ky.gov/Departments/Pages/Planning-Zoning.aspx">Planning &amp; Zoning page</a>
+      </p>
+      <blockquote>Please provide the most current machine-readable geographic data covering the Cities of Eminence and New Castle for:
+
+1. Current zoning-district boundaries or parcel-level zoning assignments.
+2. All zoning-map amendments or rezonings adopted since the dataset was last updated.
+3. The most recently adopted future-land-use map.
+4. The current corporate boundaries for Eminence and New Castle.
+5. Any available parcel-identification field used to connect zoning data to PVA parcels.
+6. Metadata showing the dataset’s effective date, projection and responsible agency.
+
+Preferred formats are GeoPackage, shapefile, GeoJSON, file geodatabase or a spreadsheet containing parcel IDs and zoning classifications. PDF maps may also be provided if no machine-readable geographic data exists.</blockquote>
+    </section>
+
+    <section class="card">
+      <h2>Also ask for the legal record</h2>
+      <ul>
+        <li>Every zoning-map amendment affecting Eminence or New Castle</li>
+        <li>Ordinance or case number</li>
+        <li>Adoption date</li>
+        <li>Parcel identification number</li>
+        <li>Previous zoning / new zoning</li>
+        <li>Conditions imposed</li>
+        <li>Link or citation to meeting minutes</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>City contacts</h2>
+      <ul>
+        <li>
+          <strong>Eminence</strong> —
+          <a href="https://eminence.ky.gov/our-city/Pages/City-Council-Meetings.aspx">City Council meetings</a>
+          (clerk: city-owned land, permits, annexation, sidewalks, utilities)
+        </li>
+        <li>
+          <strong>New Castle</strong> —
+          <a href="https://www.newcastleky.com/">newcastleky.com</a>
+          · City Hall 502-845-5750 · Clerk Lynn Adams
+          (same checklist for the county seat)
+        </li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Important distinction</h2>
+      <p>Keep these as separate map layers:</p>
+      <ul>
+        <li>Current zoning</li>
+        <li>Existing land use</li>
+        <li>Adopted future land use</li>
+        <li>Proposed future changes</li>
+      </ul>
+      <p>Do not label a traced PDF as official current zoning without Planning and Zoning verification.</p>
+    </section>
+  </main>
+</body>
+</html>
