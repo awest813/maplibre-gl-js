@@ -378,11 +378,31 @@ let searchMarker = null;
 let measuring = false;
 let cityBounds = null;
 let hasInspectedFeature = false;
+let lastFeatureCopyText = "";
+let searchHits = [];
+let searchActiveIndex = -1;
 const interactiveStyleIds = [];
 const failedLayers = new Set();
 
 document.getElementById("feature-close").addEventListener("click", () => {
   featureCard.hidden = true;
+});
+
+document.getElementById("feature-copy-btn")?.addEventListener("click", async () => {
+  const btn = document.getElementById("feature-copy-btn");
+  if (!lastFeatureCopyText) return;
+  try {
+    await navigator.clipboard.writeText(lastFeatureCopyText);
+    if (btn) {
+      const prev = btn.textContent;
+      btn.textContent = "Copied";
+      window.setTimeout(() => {
+        btn.textContent = prev;
+      }, 1600);
+    }
+  } catch {
+    setToolStatus("Could not copy details.");
+  }
 });
 
 function showFeature(title, props, layerName = "") {
@@ -397,6 +417,10 @@ function showFeature(title, props, layerName = "") {
     ([key, v]) =>
       !HIDDEN_PROP_KEYS.has(key) && v !== null && v !== undefined && v !== ""
   );
+  const copyLines = [];
+  if (layerName) copyLines.push(`Layer: ${layerName}`);
+  copyLines.push(title);
+
   if (!entries.length && !notes.length) {
     const div = document.createElement("div");
     const dt = document.createElement("dt");
@@ -410,10 +434,13 @@ function showFeature(title, props, layerName = "") {
       const div = document.createElement("div");
       const dt = document.createElement("dt");
       const dd = document.createElement("dd");
-      dt.textContent = humanizeKey(key);
-      dd.textContent = formatPropValue(key, value);
+      const label = humanizeKey(key);
+      const formatted = formatPropValue(key, value);
+      dt.textContent = label;
+      dd.textContent = formatted;
       div.append(dt, dd);
       featureAttrs.appendChild(div);
+      copyLines.push(`${label}: ${formatted}`);
     }
   }
 
@@ -422,7 +449,9 @@ function showFeature(title, props, layerName = "") {
     note.className = "feature-note";
     note.textContent = notes.join(" ");
     featureAttrs.appendChild(note);
+    copyLines.push(...notes);
   }
+  lastFeatureCopyText = copyLines.join("\n");
   featureCard.hidden = false;
   hasInspectedFeature = true;
   if (mapHint && !measuring) mapHint.hidden = true;
@@ -1188,15 +1217,35 @@ function applyPreset(preset) {
 function renderPresets() {
   const el = document.getElementById("preset-list");
   el.innerHTML = "";
-  for (const preset of catalog.presets || []) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "preset-btn";
-    btn.dataset.preset = preset.id;
-    btn.textContent = preset.name;
-    btn.addEventListener("click", () => applyPreset(preset));
-    el.appendChild(btn);
-  }
+  const placeIds = new Set(["overview", "eminence", "new-castle"]);
+  const places = (catalog.presets || []).filter((p) => placeIds.has(p.id));
+  const themes = (catalog.presets || []).filter((p) => !placeIds.has(p.id));
+
+  const appendGroup = (label, presets) => {
+    if (!presets.length) return;
+    const group = document.createElement("div");
+    group.className = "preset-group";
+    const title = document.createElement("p");
+    title.className = "preset-group-label";
+    title.textContent = label;
+    group.appendChild(title);
+    const row = document.createElement("div");
+    row.className = "preset-group-row";
+    for (const preset of presets) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "preset-btn";
+      btn.dataset.preset = preset.id;
+      btn.textContent = preset.name;
+      btn.addEventListener("click", () => applyPreset(preset));
+      row.appendChild(btn);
+    }
+    group.appendChild(row);
+    el.appendChild(group);
+  };
+
+  appendGroup("Place", places);
+  appendGroup("Theme", themes);
 }
 
 function restackLayers() {
@@ -1404,17 +1453,91 @@ function layerStatusMeta(layer) {
   return { status: "ready", statusLabel: "Free data" };
 }
 
+function updateFoldCounts() {
+  for (const fold of document.querySelectorAll(".panel-fold[data-group]")) {
+    const group = fold.dataset.group;
+    const badge = fold.querySelector(`[data-fold-count="${group}"]`);
+    if (!badge) continue;
+    const inputs = [...fold.querySelectorAll("input[data-layer]:not(:disabled)")];
+    const on = inputs.filter((input) => input.checked).length;
+    badge.textContent = on ? `${on} on` : "";
+    badge.classList.toggle("has-on", on > 0);
+  }
+}
+
 function updateLayerCount() {
   const label = document.getElementById("layer-count-label");
-  if (!label) return;
   const inputs = [...document.querySelectorAll("input[data-layer]:not(:disabled)")];
   const on = inputs.filter((input) => input.checked).length;
-  label.textContent = `${on} of ${inputs.length} layers on`;
+  if (label) label.textContent = `${on} of ${inputs.length} on`;
+  const toggleBtn = document.getElementById("panel-toggle");
+  const sidePanel = document.getElementById("side-panel");
+  const panelOpen = sidePanel?.classList.contains("open");
+  if (toggleBtn && window.matchMedia("(max-width: 900px)").matches) {
+    toggleBtn.textContent = panelOpen ? "Close" : on ? `Layers · ${on}` : "Layers";
+  }
+  updateFoldCounts();
 }
 
 function syncLayerRowState(input) {
   const row = input.closest(".layer-row");
   if (row) row.classList.toggle("on", input.checked);
+}
+
+function filterLayerList(query) {
+  const q = query.trim().toLowerCase();
+  let visible = 0;
+  for (const row of document.querySelectorAll(".layer-row")) {
+    const name = row.querySelector(".layer-name")?.textContent?.toLowerCase() || "";
+    const meta = row.querySelector(".layer-meta")?.textContent?.toLowerCase() || "";
+    const match = !q || name.includes(q) || meta.includes(q);
+    row.hidden = !match;
+    if (match) visible += 1;
+  }
+  for (const fold of document.querySelectorAll(".panel-fold[data-group]")) {
+    const anyVisible = [...fold.querySelectorAll(".layer-row")].some((row) => !row.hidden);
+    fold.classList.toggle("filter-empty", Boolean(q) && !anyVisible);
+    if (q && anyVisible) fold.open = true;
+  }
+  const meta = document.getElementById("layer-filter-meta");
+  if (meta) meta.textContent = q ? `${visible} shown` : "";
+}
+
+function setLayerChecked(layerId, on) {
+  const layer = catalog.layers.find((l) => l.id === layerId);
+  const input = document.querySelector(`input[data-layer="${layerId}"]`);
+  if (!layer || !input || input.disabled) return;
+  input.checked = on;
+  syncLayerRowState(input);
+  if (layer._styleIds) setLayerVisibility(layer._styleIds, on);
+}
+
+function applyDefaultLayers() {
+  for (const layer of catalog.layers) {
+    setLayerChecked(layer.id, !!layer.defaultVisible && !failedLayers.has(layer.id));
+  }
+  document.querySelectorAll(".preset-btn").forEach((btn) => btn.classList.remove("active"));
+  updateLayerCount();
+  openFoldsForActiveLayers();
+  writeUrlState();
+  setToolStatus("Restored default layers.");
+}
+
+function clearOverlayLayers() {
+  for (const layer of catalog.layers) {
+    const keep =
+      layer.id === "city-boundary" ||
+      layer.id === "roads" ||
+      layer.id === "buildings" ||
+      layer.id === "streams" ||
+      layer.id === "waterbodies";
+    setLayerChecked(layer.id, keep && !failedLayers.has(layer.id));
+  }
+  document.querySelectorAll(".preset-btn").forEach((btn) => btn.classList.remove("active"));
+  updateLayerCount();
+  openFoldsForActiveLayers();
+  writeUrlState();
+  setToolStatus("Cleared overlays. Base map layers kept.");
 }
 
 function renderLayerControls(layers) {
@@ -1583,10 +1706,23 @@ function buildSearchIndex(addressData) {
     }));
 }
 
+function highlightSearchResult(index) {
+  const resultsEl = document.getElementById("search-results");
+  const buttons = [...resultsEl.querySelectorAll("button[data-idx]")];
+  buttons.forEach((btn, i) => {
+    btn.classList.toggle("active", i === index);
+    if (i === index) btn.setAttribute("aria-selected", "true");
+    else btn.removeAttribute("aria-selected");
+  });
+  if (index >= 0 && buttons[index]) buttons[index].scrollIntoView({ block: "nearest" });
+}
+
 function runSearch(query) {
   const q = query.trim().toLowerCase();
   const resultsEl = document.getElementById("search-results");
+  searchActiveIndex = -1;
   if (!q) {
+    searchHits = [];
     resultsEl.hidden = true;
     resultsEl.innerHTML = "";
     return;
@@ -1605,22 +1741,22 @@ function runSearch(query) {
     scored.push({ item, score });
   }
   scored.sort((a, b) => a.score - b.score || a.item.address.localeCompare(b.item.address));
-  const hits = scored.slice(0, 8).map((row) => row.item);
-  if (!hits.length) {
+  searchHits = scored.slice(0, 8).map((row) => row.item);
+  if (!searchHits.length) {
     resultsEl.hidden = false;
     resultsEl.innerHTML = `<li><button type="button" disabled>No matches</button></li>`;
     return;
   }
   resultsEl.hidden = false;
-  resultsEl.innerHTML = hits
+  resultsEl.innerHTML = searchHits
     .map((item, i) => {
       const label = escapeHtml(item.address) + (item.muni ? ` · ${escapeHtml(item.muni)}` : "");
-      return `<li><button type="button" data-idx="${i}">${label}</button></li>`;
+      return `<li><button type="button" role="option" data-idx="${i}">${label}</button></li>`;
     })
     .join("");
   resultsEl.querySelectorAll("button[data-idx]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const item = hits[Number(btn.dataset.idx)];
+      const item = searchHits[Number(btn.dataset.idx)];
       flyToAddress(item);
       resultsEl.hidden = true;
     });
@@ -1730,11 +1866,23 @@ map.on("load", async () => {
     }, 3200);
   });
 
-  document.getElementById("reset-view-btn")?.addEventListener("click", () => {
+  document.getElementById("dock-reset-btn")?.addEventListener("click", () => {
     fitCityBounds();
     setToolStatus("Returned to city overview.");
   });
 
+  document.getElementById("layers-defaults-btn")?.addEventListener("click", () => {
+    applyDefaultLayers();
+  });
+  document.getElementById("layers-clear-btn")?.addEventListener("click", () => {
+    clearOverlayLayers();
+  });
+  document.getElementById("layer-filter")?.addEventListener("input", (e) => {
+    filterLayerList(e.target.value);
+  });
+
+  openFoldsForActiveLayers();
+  updateFoldCounts();
   setupMapTools();
 });
 
@@ -1753,9 +1901,10 @@ function haversineMiles(a, b) {
 
 function setupMapTools() {
   const exportBtn = document.getElementById("export-png-btn");
-  const measureBtn = document.getElementById("measure-btn");
-  const clearBtn = document.getElementById("measure-clear-btn");
+  const measureBtn = document.getElementById("dock-measure-btn");
+  const clearBtn = document.getElementById("dock-measure-clear-btn");
   const measureCoords = [];
+  if (!measureBtn || !clearBtn || !exportBtn) return;
 
   map.addSource("measure-line", {
     type: "geojson",
@@ -1903,7 +2052,12 @@ function resizeMapSoon() {
 function setPanelOpen(open) {
   panel.classList.toggle("open", open);
   toggle.setAttribute("aria-expanded", String(open));
-  toggle.textContent = open ? "Close" : "Layers";
+  if (window.matchMedia("(max-width: 900px)").matches) {
+    if (open) toggle.textContent = "Close";
+    else updateLayerCount();
+  } else {
+    toggle.textContent = "Layers";
+  }
   if (backdrop) backdrop.hidden = !open || !window.matchMedia("(max-width: 900px)").matches;
   resizeMapSoon();
 }
@@ -1936,10 +2090,40 @@ document.addEventListener("keydown", (e) => {
 const searchForm = document.getElementById("search-form");
 const searchInput = document.getElementById("search-input");
 searchInput.addEventListener("input", () => runSearch(searchInput.value));
+searchInput.addEventListener("keydown", (e) => {
+  const resultsEl = document.getElementById("search-results");
+  if (resultsEl.hidden || !searchHits.length) return;
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    searchActiveIndex = Math.min(searchHits.length - 1, searchActiveIndex + 1);
+    highlightSearchResult(searchActiveIndex);
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    searchActiveIndex = Math.max(0, searchActiveIndex - 1);
+    highlightSearchResult(searchActiveIndex);
+  } else if (e.key === "Enter" && searchActiveIndex >= 0) {
+    e.preventDefault();
+    flyToAddress(searchHits[searchActiveIndex]);
+    resultsEl.hidden = true;
+  }
+});
 searchForm.addEventListener("submit", (e) => {
   e.preventDefault();
+  if (searchActiveIndex >= 0 && searchHits[searchActiveIndex]) {
+    flyToAddress(searchHits[searchActiveIndex]);
+    document.getElementById("search-results").hidden = true;
+    return;
+  }
   const q = searchInput.value.trim().toLowerCase();
-  const hit = searchIndex.find((item) => item.address.toLowerCase().includes(q));
+  const hit =
+    searchHits[0] ||
+    searchIndex.find(
+      (item) =>
+        item.address.toLowerCase().includes(q) ||
+        String(item.muni || "")
+          .toLowerCase()
+          .includes(q)
+    );
   if (hit) {
     flyToAddress(hit);
     document.getElementById("search-results").hidden = true;
