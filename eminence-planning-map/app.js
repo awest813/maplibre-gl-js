@@ -478,7 +478,7 @@ function addLayerStyles(layer) {
         "symbol-placement": "line",
         "text-field": ["get", "name"],
         "text-size": 11,
-        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+        "text-font": ["Noto Sans Regular"],
       },
       paint: {
         "text-color": "#3a342c",
@@ -569,7 +569,7 @@ function addLayerStyles(layer) {
         "text-field": ["get", "name"],
         "text-size": 11,
         "text-offset": [0, 1.2],
-        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+        "text-font": ["Noto Sans Regular"],
       },
       paint: {
         "text-color": "#1c2418",
@@ -666,7 +666,7 @@ function addLayerStyles(layer) {
       layout: {
         "text-field": ["get", "district_code"],
         "text-size": 12,
-        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+        "text-font": ["Noto Sans Regular"],
       },
       paint: {
         "text-color": "#1c2418",
