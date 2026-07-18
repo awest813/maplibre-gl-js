@@ -1,0 +1,1 @@
+{"type":"FeatureCollection","crs":{"type":"name","properties":{"name":"EPSG:4326"}},"features":[{"type":"Feature","id":2,"geometry":{"type":"Point","coordinates":[-85.1756639996956,38.3748459990465]},"properties":{"name":"Housing Authority of Eminence","development":"KY078000001","total_units":85,"occupied_units":79,"pct_occupied":92.94000244140625,"status":"M"}}]}

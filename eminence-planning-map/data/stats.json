@@ -113,5 +113,16 @@
       "Freshwater Forested/Shrub Wetland",
       7
     ]
-  ]
+  ],
+  "nursing_homes": 3,
+  "public_housing": 1,
+  "brownfields": 2,
+  "industrial_parks": 1,
+  "traffic_counts": 17,
+  "trails": 3,
+  "voting_precincts": 14,
+  "social_vulnerability_areas": 4,
+  "broadband_areas": 7,
+  "dams": 11,
+  "priority_watersheds": 8
 }

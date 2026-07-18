@@ -54,11 +54,11 @@ Upload the contents of `eminence-planning-map/` (not the whole MapLibre repo) to
 
 ## Free layers
 
-**Base:** Henry County, city limits, streets, addresses, buildings, streams, waterbodies, flood hazards, wetlands, sinkholes, groundwater sensitivity  
-**Planning:** zoning/land-use districts (`HenryCoZoning` / `Landuse_Henry`), parcels without owner names  
-**Community:** railroads, bridges, schools, walking buffers, school districts, fire/EMS/law response areas, fire & police stations, courthouses, libraries, health centers, parks/open space, census tracts & block groups, magisterial districts, airports  
-**Utilities:** wastewater plant, wastewater projects, water tanks, water projects (generalized—not pipe networks)  
-**Places (OSM + regional):** sidewalks/paths, parks, parking, civic/food amenities, shops, EV chargers  
+**Base:** Henry County, city limits, streets, addresses, buildings, streams, waterbodies, flood hazards, wetlands, sinkholes & drainage, karst potential, groundwater sensitivity, priority watersheds, dams  
+**Planning:** zoning/land-use districts (`HenryCoZoning` / `Landuse_Henry`), parcels without owner names, brownfields, industrial parks  
+**Community:** railroads, bridges, traffic counts, schools, walking buffers, school districts, fire/EMS/law response areas, fire & police stations, courthouses, libraries, health centers, nursing/assisted living, public housing, parks/open space, census tracts & block groups, magisterial districts, voting precincts, social vulnerability, broadband, airports  
+**Utilities:** wastewater plant, wastewater projects, sewer planning units, water tanks, water pump stations, water projects (generalized—not pipe networks)  
+**Places (OSM + regional):** sidewalks/paths, trails/multi-use, parks, parking, civic/food amenities, shops, EV chargers  
 **Analysis:** public/exempt parcels; zero-improvement parcels; unbuilt-address hints; unaddressed-building hints; possible missing sidewalks  
 
 **Basemaps:** OpenStreetMap · Kentucky NAIP 2022 aerial tiles

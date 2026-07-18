@@ -56,6 +56,13 @@ const PROP_LABELS = {
   sensitivity: "Sensitivity",
   sensitivity_label: "Sensitivity",
   population: "Population",
+  pct_lack_access: "% lacking broadband",
+  avg_speed: "Avg. speed",
+  hazard_class: "Hazard class",
+  truck_percent: "Truck %",
+  total_units: "Total units",
+  former_use: "Former use",
+  projected_reuse: "Projected reuse",
   COUNTY: "County",
   INCORP: "Incorporated",
   LAST_UPDT: "Last updated",
@@ -106,8 +113,9 @@ const LEGEND = [
   { label: "Flood hazard", color: "#c45c26", kind: "fill" },
   { label: "Wetlands", color: "#2f6f6a", kind: "fill" },
   { label: "Public / exempt parcels", color: "#0f766e", kind: "fill" },
+  { label: "Trails / paths", color: "#166534", kind: "line" },
   { label: "Civic facilities", color: "#9a6b2f", kind: "dot" },
-  { label: "Vacancy / sidewalk hints", color: "#b45309", kind: "dot" },
+  { label: "Brownfields / vacancy hints", color: "#b45309", kind: "dot" },
 ];
 
 /** Higher score = preferred when features overlap under the cursor. */
@@ -124,7 +132,13 @@ function inspectPriority(styleId) {
     styleId.startsWith("health-centers") ||
     styleId.startsWith("ems-agencies") ||
     styleId.startsWith("ev-chargers") ||
-    styleId.startsWith("airports")
+    styleId.startsWith("airports") ||
+    styleId.startsWith("nursing-homes") ||
+    styleId.startsWith("public-housing") ||
+    styleId.startsWith("brownfields") ||
+    styleId.startsWith("traffic-counts") ||
+    styleId.startsWith("dams") ||
+    styleId.startsWith("water-pump")
   ) {
     return 100;
   }
@@ -639,6 +653,22 @@ function addLayerStyles(layer) {
     return [`${id}-fill`, `${id}-line`];
   }
 
+  if (id === "sinkhole-drainage") {
+    return fillLine(id, "#8b5e3c", "#6b4423", 0.28);
+  }
+
+  if (id === "karst-potential") {
+    return fillLine(id, "#a67c52", "#7a5734", 0.18);
+  }
+
+  if (id === "priority-watersheds") {
+    return fillLine(id, "#3d6f7a", "#2a4f57", 0.12);
+  }
+
+  if (id === "dams") {
+    return pointStyle(id, "#7c3a2d", 7);
+  }
+
   if (id === "railroads") {
     map.addLayer({
       id: `${id}-line`,
@@ -755,8 +785,63 @@ function addLayerStyles(layer) {
     return pointStyle(id, "#57534e", 7);
   }
 
-  if (id === "wwtp" || id === "water-tanks") {
+  if (id === "nursing-homes") {
+    return pointStyle(id, "#7a4e2d", 7);
+  }
+
+  if (id === "public-housing") {
+    return pointStyle(id, "#0f766e", 7);
+  }
+
+  if (id === "traffic-counts") {
+    return pointStyle(id, "#b45309", 5);
+  }
+
+  if (id === "voting-precincts") {
+    return fillLine(id, "#6b5b4a", "#4a3f35", 0.06);
+  }
+
+  if (id === "social-vulnerability") {
+    return fillLine(id, "#9a3412", "#7f1d1d", 0.16);
+  }
+
+  if (id === "broadband") {
+    map.addLayer({
+      id: `${id}-fill`,
+      type: "fill",
+      source: id,
+      paint: {
+        "fill-color": [
+          "interpolate",
+          ["linear"],
+          ["coalesce", ["to-number", ["get", "pct_lack_access"]], 0],
+          0,
+          "#86efac",
+          10,
+          "#e9c46a",
+          25,
+          "#e07a3d",
+          40,
+          "#b45309",
+        ],
+        "fill-opacity": 0.28,
+      },
+    });
+    map.addLayer({
+      id: `${id}-line`,
+      type: "line",
+      source: id,
+      paint: { "line-color": "#3f6212", "line-width": 1 },
+    });
+    return [`${id}-fill`, `${id}-line`];
+  }
+
+  if (id === "wwtp" || id === "water-tanks" || id === "water-pump-stations") {
     return pointStyle(id, "#3d6f7a", 8);
+  }
+
+  if (id === "sewer-planning-units") {
+    return fillLine(id, "#0f766e", "#115e59", 0.12);
   }
 
   if (id === "ww-improvements" || id === "water-improvements") {
@@ -787,6 +872,14 @@ function addLayerStyles(layer) {
       paint: { "fill-color": "#0f766e", "fill-opacity": 0.2 },
     });
     return [`${id}-circle`, `${id}-line`, `${id}-fill`];
+  }
+
+  if (id === "brownfields") {
+    return pointStyle(id, "#b45309", 8);
+  }
+
+  if (id === "industrial-parks") {
+    return fillLine(id, "#57534e", "#44403c", 0.28);
   }
 
   if (id === "henry-landuse-zoning") {
@@ -886,14 +979,14 @@ function addLayerStyles(layer) {
     return [`${id}-line`];
   }
 
-  if (id === "osm-sidewalks") {
+  if (id === "osm-sidewalks" || id === "trails") {
     map.addLayer({
       id: `${id}-line`,
       type: "line",
       source: id,
       paint: {
-        "line-color": "#15803d",
-        "line-width": 3,
+        "line-color": id === "trails" ? "#166534" : "#15803d",
+        "line-width": id === "trails" ? 3.5 : 3,
         "line-opacity": 0.9,
       },
     });
@@ -1113,16 +1206,30 @@ function restackLayers() {
     "henry-county-line",
     "groundwater-sensitivity-fill",
     "groundwater-sensitivity-line",
+    "karst-potential-fill",
+    "karst-potential-line",
+    "priority-watersheds-fill",
+    "priority-watersheds-line",
+    "broadband-fill",
+    "broadband-line",
+    "social-vulnerability-fill",
+    "social-vulnerability-line",
     "flood-hazards-fill",
     "flood-hazards-line",
     "wetlands-fill",
     "wetlands-line",
     "sinkholes-fill",
     "sinkholes-line",
+    "sinkhole-drainage-fill",
+    "sinkhole-drainage-line",
     "school-districts-fill",
     "school-districts-line",
     "magisterial-districts-fill",
     "magisterial-districts-line",
+    "voting-precincts-fill",
+    "voting-precincts-line",
+    "sewer-planning-units-fill",
+    "sewer-planning-units-line",
     "fire-districts-fill",
     "fire-districts-line",
     "ems-districts-fill",
@@ -1137,6 +1244,8 @@ function restackLayers() {
     "school-buffers-line",
     "parks-open-space-fill",
     "parks-open-space-line",
+    "industrial-parks-fill",
+    "industrial-parks-line",
     "henry-landuse-zoning-fill",
     "henry-landuse-zoning-line",
     "parcels-fill",
@@ -1158,6 +1267,7 @@ function restackLayers() {
     "railroads-line",
     "analysis-missing-sidewalks-line",
     "osm-sidewalks-line",
+    "trails-line",
     "osm-parks-fill",
     "osm-parking-fill",
     "addresses-circle",
@@ -1169,10 +1279,16 @@ function restackLayers() {
     "courthouses-circle",
     "libraries-circle",
     "health-centers-circle",
+    "nursing-homes-circle",
+    "public-housing-circle",
+    "brownfields-circle",
+    "traffic-counts-circle",
+    "dams-circle",
     "airports-circle",
     "ev-chargers-circle",
     "wwtp-circle",
     "water-tanks-circle",
+    "water-pump-stations-circle",
     "ww-improvements-circle",
     "ww-improvements-line",
     "ww-improvements-fill",

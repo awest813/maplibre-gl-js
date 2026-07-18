@@ -446,6 +446,273 @@ def main() -> None:
         feat["geometry"] = simplify_geom(feat.get("geometry") or {}, 4)
     write_geojson(DATA / "magisterial-districts.geojson", mag)
 
+    print("Nursing / assisted living…")
+    nursing = query(
+        f"{KIPDA}/Nursing_Home_and_Assisted_Living_Facilities/FeatureServer/0/query",
+        bbox_params(WIDE_BBOX, "*"),
+    )
+    for feat in nursing.get("features", []):
+        p = feat.get("properties") or {}
+        name = p.get("PlaceName") or p.get("LongLabel") or p.get("ShortLabel") or "Care facility"
+        if isinstance(name, str) and "," in name:
+            name = name.split(",")[0].strip()
+        feat["properties"] = clean_props(
+            {
+                "name": name,
+                "address": p.get("Place_addr") or p.get("Match_addr"),
+                "phone": p.get("Phone"),
+                "type": p.get("Type") or "Nursing / assisted living",
+            }
+        )
+    write_geojson(DATA / "nursing-homes.geojson", nursing)
+
+    print("Public housing…")
+    housing = query(
+        f"{KIPDA}/Public_Housing_Developments/FeatureServer/0/query",
+        bbox_params(WIDE_BBOX, "*"),
+    )
+    for feat in housing.get("features", []):
+        p = feat.get("properties") or {}
+        feat["properties"] = clean_props(
+            {
+                "name": p.get("FORMAL_PAR") or p.get("PROJECT_NA") or "Public housing",
+                "development": p.get("DEVELOPMEN") or p.get("PROJECT_NA"),
+                "total_units": p.get("TOTAL_UNIT") or p.get("TOTAL_DWEL"),
+                "occupied_units": p.get("TOTAL_OCCU"),
+                "pct_occupied": p.get("PCT_OCCUPI"),
+                "status": p.get("PD_STATUS_"),
+            }
+        )
+    write_geojson(DATA / "public-housing.geojson", housing)
+
+    print("Brownfield sites…")
+    brownfields = query(f"{KIPDA}/CED_Brownfield_Sites/FeatureServer/0/query", bbox_params(WIDE_BBOX, "*"))
+    for feat in brownfields.get("features", []):
+        p = feat.get("properties") or {}
+        feat["properties"] = clean_props(
+            {
+                "name": p.get("Site_Name") or "Brownfield site",
+                "address": p.get("Address"),
+                "city": titleish(p.get("City")),
+                "zip": p.get("ZIP"),
+                "county": titleish(p.get("County")),
+                "acres": p.get("Acres"),
+                "building_size": p.get("Building_Size"),
+                "former_use": p.get("Former_Property_Use"),
+                "current_use": p.get("Current_Property_Use"),
+                "projected_reuse": p.get("Projected_Reuse"),
+                "ownership": p.get("Ownership__Private_or_Public"),
+                "program": p.get("Program_Activities"),
+            }
+        )
+    write_geojson(DATA / "brownfields.geojson", brownfields)
+
+    print("Industrial parks…")
+    industrial = query(f"{KIPDA}/Kipda_Industrial_parks/FeatureServer/0/query", bbox_params(WIDE_BBOX, "*"))
+    for feat in industrial.get("features", []):
+        p = feat.get("properties") or {}
+        feat["properties"] = clean_props(
+            {
+                "name": p.get("NAME") or p.get("LANDUSE_ID") or "Industrial park",
+                "county": titleish(p.get("COUNTY")),
+                "landuse_id": p.get("LANDUSE_ID"),
+            }
+        )
+        feat["geometry"] = simplify_geom(feat.get("geometry") or {}, 3)
+    write_geojson(DATA / "industrial-parks.geojson", industrial)
+
+    print("Traffic counts…")
+    traffic = query(f"{KIPDA}/KIPDA_TrafficCounts2024/FeatureServer/0/query", bbox_params(BBOX, "*"))
+    for feat in traffic.get("features", []):
+        p = feat.get("properties") or {}
+        route = str(p.get("Route") or "").strip()
+        feat["properties"] = clean_props(
+            {
+                "name": route or "Traffic count",
+                "route": route,
+                "year": p.get("Year"),
+                "count": p.get("Count_"),
+                "truck_aadt": p.get("Truck_AADT"),
+                "truck_percent": p.get("Truck_Percent"),
+                "county": titleish(p.get("County")),
+                "source": p.get("Source"),
+            }
+        )
+    write_geojson(DATA / "traffic-counts.geojson", traffic)
+
+    print("Trails / multi-use paths…")
+    trails = query(f"{KIPDA}/MultiUsePath/FeatureServer/0/query", bbox_params(WIDE_BBOX, "*"))
+    for feat in trails.get("features", []):
+        p = feat.get("properties") or {}
+        name = str(p.get("TRAIL_NAME") or "Trail").replace("EMINEMCE", "EMINENCE")
+        feat["properties"] = clean_props(
+            {
+                "name": titleish(name),
+                "owner": p.get("OWNER") or p.get("MANAGER"),
+                "surface": p.get("SURFACE") or p.get("OTHSURFACE"),
+                "hiking": p.get("HIKING"),
+                "biking": p.get("BIKING"),
+                "ada_access": p.get("ADA_ACCESS"),
+            }
+        )
+    write_geojson(DATA / "trails.geojson", trails)
+
+    print("Voting precincts…")
+    precincts = query(f"{KIPDA}/HenryPecincts2023/FeatureServer/0/query", bbox_params(WIDE_BBOX, "*"))
+    for feat in precincts.get("features", []):
+        p = feat.get("properties") or {}
+        feat["properties"] = clean_props(
+            {
+                "name": titleish(p.get("PREC_NAME") or "Precinct"),
+                "vtd": p.get("VTD"),
+            }
+        )
+        feat["geometry"] = simplify_geom(feat.get("geometry") or {}, 5)
+    write_geojson(DATA / "voting-precincts.geojson", precincts)
+
+    print("Social vulnerability…")
+    svi = query(
+        f"{KIPDA}/KIPDA_Social_Vulnerability_Index/FeatureServer/0/query",
+        bbox_params(BBOX, "*"),
+    )
+    svi_keep = []
+    for feat in svi.get("features", []):
+        p = feat.get("properties") or {}
+        if str(p.get("COUNTY") or "").upper() not in {"HENRY", "HENRY COUNTY"}:
+            continue
+        feat["properties"] = clean_props(
+            {
+                "name": p.get("LOCATION") or p.get("FIPS") or "SVI area",
+                "county": titleish(p.get("COUNTY")),
+                "fips": p.get("FIPS"),
+                "population": p.get("E_TOTPOP"),
+                "poverty": p.get("E_POV"),
+                "unemployed": p.get("E_UNEMP"),
+                "area_sqmi": p.get("AREA_SQMI"),
+            }
+        )
+        feat["geometry"] = simplify_geom(feat.get("geometry") or {}, 4)
+        svi_keep.append(feat)
+    write_geojson(DATA / "social-vulnerability.geojson", {"type": "FeatureCollection", "features": svi_keep})
+
+    print("Broadband coverage…")
+    broadband = query(
+        f"{KIPDA}/KIPDA_Region_Broadband_KY/FeatureServer/0/query",
+        bbox_params(BBOX, "*"),
+    )
+    for feat in broadband.get("features", []):
+        p = feat.get("properties") or {}
+        zcta = p.get("ZCTA5CE10") or p.get("GEOID10")
+        feat["properties"] = clean_props(
+            {
+                "name": f"ZIP {zcta}" if zcta else "Broadband area",
+                "zip": zcta,
+                "pct_lack_access": p.get("Per_Lack"),
+                "avg_speed": p.get("Av_Speed"),
+            }
+        )
+        feat["geometry"] = simplify_geom(feat.get("geometry") or {}, 6)
+    write_geojson(DATA / "broadband.geojson", broadband)
+
+    print("Regulated dams…")
+    dams = query(f"{KIPDA}/DOW_Regulated_Dams_KIPDA/FeatureServer/1/query", bbox_params(WIDE_BBOX, "*"))
+    dam_keep = []
+    for feat in dams.get("features", []):
+        p = feat.get("properties") or {}
+        if "HENRY" not in str(p.get("COUNTY") or "").upper():
+            continue
+        feat["properties"] = clean_props(
+            {
+                "name": titleish(p.get("DAMNAME") or p.get("DAMID") or "Dam"),
+                "hazard_class": p.get("HAZCLASS"),
+                "county": titleish(p.get("COUNTY")),
+                "eap_status": p.get("EAPSTATUS"),
+                "nid": p.get("NID"),
+                "dam_id": p.get("DAMID"),
+            }
+        )
+        dam_keep.append(feat)
+    write_geojson(DATA / "dams.geojson", {"type": "FeatureCollection", "features": dam_keep})
+
+    print("Priority watersheds…")
+    watersheds = query(
+        f"{KY}/Ky_DOW_Priority_Watersheds_WGS84WM/MapServer/0/query",
+        bbox_params(WIDE_BBOX, "OBJECTID,huc12,HUC12_Name,Type"),
+    )
+    for feat in watersheds.get("features", []):
+        p = feat.get("properties") or {}
+        feat["properties"] = clean_props(
+            {
+                "name": p.get("HUC12_Name") or p.get("huc12") or "Watershed",
+                "huc12": p.get("huc12"),
+                "type": p.get("Type"),
+            }
+        )
+        feat["geometry"] = simplify_geom(feat.get("geometry") or {}, 5)
+    write_geojson(DATA / "priority-watersheds.geojson", watersheds)
+
+    print("Sinkhole drainage areas…")
+    sink_drain = query(
+        f"{KY}/Ky_WaterResources_Polygons_WGS84WM/MapServer/2/query",
+        bbox_params(BBOX, "OBJECTID"),
+    )
+    for i, feat in enumerate(sink_drain.get("features", []), start=1):
+        feat["properties"] = {"name": f"Sinkhole drainage {i}"}
+        feat["geometry"] = simplify_geom(feat.get("geometry") or {}, 4)
+    write_geojson(DATA / "sinkhole-drainage.geojson", sink_drain)
+
+    print("Karst potential…")
+    karst = query(f"{KIPDA}/Karst_Potential_KIPDA_HMP/FeatureServer/2/query", bbox_params(BBOX, "*"))
+    for feat in karst.get("features", []):
+        p = feat.get("properties") or {}
+        feat["properties"] = clean_props(
+            {
+                "name": p.get("DESCRIPTIO") or "Karst potential",
+                "acres": p.get("ACRES"),
+                "area_miles": p.get("AREA_MILES"),
+            }
+        )
+        feat["geometry"] = simplify_geom(feat.get("geometry") or {}, 8)
+    write_geojson(DATA / "karst-potential.geojson", karst)
+
+    print("Sewer planning units…")
+    sewer = query(f"{KIPDA}/Wastewater_Systems/FeatureServer/9/query", bbox_params(WIDE_BBOX, "*"))
+    sewer_keep = []
+    for feat in sewer.get("features", []):
+        p = feat.get("properties") or {}
+        if str(p.get("NAME") or p.get("ADDNAME") or "").upper() != "HENRY":
+            continue
+        feat["properties"] = clean_props(
+            {
+                "name": f"{titleish(p.get('NAME') or 'Henry')} sewer planning unit",
+                "population": p.get("POPULATION"),
+                "pop_served": p.get("POP_SERVED"),
+                "households_served": p.get("HSH_SERVED"),
+                "pct_served": p.get("PCT_SERVED"),
+                "systems": p.get("NO_SYSTEMS"),
+            }
+        )
+        feat["geometry"] = simplify_geom(feat.get("geometry") or {}, 5)
+        sewer_keep.append(feat)
+    write_geojson(DATA / "sewer-planning-units.geojson", {"type": "FeatureCollection", "features": sewer_keep})
+
+    print("Water pump stations…")
+    pumps = query(f"{KIPDA}/Water_System_Data/FeatureServer/2/query", bbox_params(WIDE_BBOX, "*"))
+    for feat in pumps.get("features", []):
+        p = feat.get("properties") or {}
+        feat["properties"] = clean_props(
+            {
+                "name": p.get("SYS_NAME") or p.get("PSTAT_ID") or "Water pump station",
+                "system": p.get("SYS_NAME"),
+                "pwsid": p.get("PWSID"),
+                "capacity": p.get("WP_CAP"),
+                "use": p.get("WP_USE") or p.get("WP_OTHUSE"),
+                "type": p.get("WP_TYPE") or p.get("WP_OTHTYPE"),
+                "pumps": p.get("NO_PUMPS"),
+            }
+        )
+    write_geojson(DATA / "water-pump-stations.geojson", pumps)
+
     stats_path = DATA / "stats.json"
     stats = json.loads(stats_path.read_text()) if stats_path.exists() else {}
     stats.update(
@@ -463,6 +730,17 @@ def main() -> None:
             "ev_chargers": len(ev.get("features", [])),
             "magisterial_districts": len(mag.get("features", [])),
             "airports": len(kept_airports),
+            "nursing_homes": len(nursing.get("features", [])),
+            "public_housing": len(housing.get("features", [])),
+            "brownfields": len(brownfields.get("features", [])),
+            "industrial_parks": len(industrial.get("features", [])),
+            "traffic_counts": len(traffic.get("features", [])),
+            "trails": len(trails.get("features", [])),
+            "voting_precincts": len(precincts.get("features", [])),
+            "social_vulnerability_areas": len(svi_keep),
+            "broadband_areas": len(broadband.get("features", [])),
+            "dams": len(dam_keep),
+            "priority_watersheds": len(watersheds.get("features", [])),
             "wetland_types": Counter(
                 (f.get("properties") or {}).get("wetland_type") for f in wetlands.get("features", [])
             ).most_common(),

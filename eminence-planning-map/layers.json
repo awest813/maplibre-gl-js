@@ -129,7 +129,9 @@
         "ww-improvements",
         "water-tanks",
         "water-improvements",
-        "flood-hazards"
+        "flood-hazards",
+        "water-pump-stations",
+        "sewer-planning-units"
       ]
     },
     {
@@ -158,7 +160,11 @@
         "sinkholes",
         "groundwater-sensitivity",
         "streams",
-        "waterbodies"
+        "waterbodies",
+        "priority-watersheds",
+        "sinkhole-drainage",
+        "karst-potential",
+        "dams"
       ]
     },
     {
@@ -176,7 +182,55 @@
         "ems-agencies",
         "schools",
         "fire-districts",
-        "law-districts"
+        "law-districts",
+        "voting-precincts",
+        "nursing-homes",
+        "public-housing"
+      ]
+    },
+    {
+      "id": "housing",
+      "name": "Housing & care",
+      "basemap": "osm",
+      "layers": [
+        "city-boundary",
+        "roads",
+        "parcels",
+        "public-housing",
+        "nursing-homes",
+        "analysis-public-exempt-parcels",
+        "schools",
+        "health-centers"
+      ]
+    },
+    {
+      "id": "mobility",
+      "name": "Mobility",
+      "basemap": "osm",
+      "layers": [
+        "city-boundary",
+        "roads",
+        "traffic-counts",
+        "trails",
+        "railroads",
+        "bridges",
+        "osm-sidewalks",
+        "ev-chargers",
+        "airports"
+      ]
+    },
+    {
+      "id": "redevelopment",
+      "name": "Redevelopment",
+      "basemap": "ky-naip-2022",
+      "layers": [
+        "city-boundary",
+        "roads",
+        "parcels",
+        "brownfields",
+        "industrial-parks",
+        "henry-landuse-zoning",
+        "analysis-zero-improvement-parcels"
       ]
     }
   ],
@@ -319,6 +373,28 @@
       "verification_status": "verified_state_gis"
     },
     {
+      "id": "sinkhole-drainage",
+      "name": "Sinkhole drainage areas",
+      "group": "base",
+      "path": "data/sinkhole-drainage.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky water resources \u2014 sinkhole drainage",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_WaterResources_Polygons_WGS84WM/MapServer/2",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "karst-potential",
+      "name": "Karst potential",
+      "group": "base",
+      "path": "data/karst-potential.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA HMP karst potential",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/Karst_Potential_KIPDA_HMP/FeatureServer/2",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
       "id": "groundwater-sensitivity",
       "name": "Groundwater sensitivity",
       "group": "base",
@@ -326,6 +402,28 @@
       "defaultVisible": false,
       "source": "Kentucky groundwater sensitivity regions",
       "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Groundwater_Sensitivity_Regions_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "dams",
+      "name": "Regulated dams",
+      "group": "base",
+      "path": "data/dams.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA DOW regulated dams",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/DOW_Regulated_Dams_KIPDA/FeatureServer/1",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "priority-watersheds",
+      "name": "Priority watersheds",
+      "group": "base",
+      "path": "data/priority-watersheds.geojson",
+      "defaultVisible": false,
+      "source": "Kentucky DOW priority watersheds",
+      "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_DOW_Priority_Watersheds_WGS84WM/MapServer",
       "updated": "2026-07-18",
       "verification_status": "verified_state_gis"
     },
@@ -348,6 +446,17 @@
       "defaultVisible": false,
       "source": "Kentucky bridge points",
       "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Bridge_Points_WGS84WM/MapServer",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "traffic-counts",
+      "name": "Traffic counts",
+      "group": "community",
+      "path": "data/traffic-counts.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA traffic counts 2024",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/KIPDA_TrafficCounts2024/FeatureServer/0",
       "updated": "2026-07-18",
       "verification_status": "verified_state_gis"
     },
@@ -484,6 +593,28 @@
       "verification_status": "verified_state_gis"
     },
     {
+      "id": "nursing-homes",
+      "name": "Nursing / assisted living",
+      "group": "community",
+      "path": "data/nursing-homes.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA nursing home and assisted living facilities",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/Nursing_Home_and_Assisted_Living_Facilities/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "public-housing",
+      "name": "Public housing",
+      "group": "community",
+      "path": "data/public-housing.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA public housing developments",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/Public_Housing_Developments/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
       "id": "parks-open-space",
       "name": "Parks & open space",
       "group": "community",
@@ -529,6 +660,40 @@
       "verification_status": "verified_state_gis"
     },
     {
+      "id": "voting-precincts",
+      "name": "Voting precincts (2023)",
+      "group": "community",
+      "path": "data/voting-precincts.geojson",
+      "defaultVisible": false,
+      "source": "Henry County voting precincts 2023",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/HenryPecincts2023/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "social-vulnerability",
+      "name": "Social vulnerability",
+      "group": "community",
+      "path": "data/social-vulnerability.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA Social Vulnerability Index",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/KIPDA_Social_Vulnerability_Index/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis",
+      "notes": "CDC/ATSDR-derived SVI geography via KIPDA. Interpret carefully."
+    },
+    {
+      "id": "broadband",
+      "name": "Broadband access",
+      "group": "community",
+      "path": "data/broadband.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA regional broadband (KY ZIP areas)",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/KIPDA_Region_Broadband_KY/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
       "id": "airports",
       "name": "Airports / airstrips",
       "group": "community",
@@ -564,6 +729,18 @@
       "verification_status": "verified_state_gis"
     },
     {
+      "id": "sewer-planning-units",
+      "name": "Sewer planning units",
+      "group": "utilities",
+      "path": "data/sewer-planning-units.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA wastewater sewer planning units",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/Wastewater_Systems/FeatureServer/9",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis",
+      "notes": "Generalized service-planning geography\u2014not pipe networks."
+    },
+    {
       "id": "water-tanks",
       "name": "Water tanks",
       "group": "utilities",
@@ -573,6 +750,18 @@
       "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Water_WGS84WM/MapServer",
       "updated": "2026-07-18",
       "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "water-pump-stations",
+      "name": "Water pump stations",
+      "group": "utilities",
+      "path": "data/water-pump-stations.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA water system pump stations",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/Water_System_Data/FeatureServer/2",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis",
+      "notes": "Generalized facility points\u2014not valve/line detail."
     },
     {
       "id": "water-improvements",
@@ -608,6 +797,28 @@
       "updated": "2026-07-18",
       "verification_status": "public_arcgis_unverified_currency",
       "notes": "Owner names intentionally omitted from the public extract."
+    },
+    {
+      "id": "brownfields",
+      "name": "Brownfield sites",
+      "group": "planning",
+      "path": "data/brownfields.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA CED brownfield sites",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/CED_Brownfield_Sites/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
+    },
+    {
+      "id": "industrial-parks",
+      "name": "Industrial parks",
+      "group": "planning",
+      "path": "data/industrial-parks.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA industrial parks",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/Kipda_Industrial_parks/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
     },
     {
       "id": "analysis-public-exempt-parcels",
@@ -680,6 +891,17 @@
       "updated": "2026-07-18",
       "verification_status": "community_mapped",
       "notes": "Community-mapped; coverage is incomplete."
+    },
+    {
+      "id": "trails",
+      "name": "Trails / multi-use paths",
+      "group": "places",
+      "path": "data/trails.geojson",
+      "defaultVisible": false,
+      "source": "KIPDA multi-use paths / trails",
+      "sourceUrl": "https://services5.arcgis.com/SRuaqVyoD8TEQJga/arcgis/rest/services/MultiUsePath/FeatureServer/0",
+      "updated": "2026-07-18",
+      "verification_status": "verified_state_gis"
     },
     {
       "id": "osm-parks",
