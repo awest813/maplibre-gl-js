@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Refresh Eminence layers from free public ArcGIS / Kentucky GIS services."""
+"""Refresh Eminence + New Castle layers from free public ArcGIS / Kentucky GIS services."""
 
 from __future__ import annotations
 
@@ -12,20 +12,22 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 
+# Eminence (south) through New Castle (county seat, north) with a small pad.
 BBOX = {
     "xmin": -85.21,
     "ymin": 38.34,
     "xmax": -85.14,
-    "ymax": 38.39,
+    "ymax": 38.45,
     "spatialReference": {"wkid": 4326},
 }
 WIDE_BBOX = {
     "xmin": -85.30,
     "ymin": 38.28,
     "xmax": -85.05,
-    "ymax": 38.45,
+    "ymax": 38.50,
     "spatialReference": {"wkid": 4326},
 }
+FOCUS_MUNIS = {"eminence", "new castle"}
 
 
 def query(url: str, params: dict) -> dict:
@@ -114,11 +116,14 @@ def main() -> None:
     DATA.mkdir(parents=True, exist_ok=True)
     base = "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services"
 
-    print("City boundary…")
+    print("City boundaries (Eminence + New Castle)…")
     city = query(
         f"{base}/Ky_CityBnd_Polygon_WGS84WM/MapServer/0/query",
         {
-            "where": "NAME LIKE '%EMINENCE%'",
+            "where": (
+                "UPPER(COUNTY) LIKE '%HENRY%' AND "
+                "(UPPER(NAME)='EMINENCE' OR UPPER(NAME)='NEW CASTLE')"
+            ),
             "outFields": "NAME,FIPS,COUNTY,INCORP,CLASS,Area_SqMiles,POP2010,LAST_UPDT,CITYFIPS",
             "returnGeometry": "true",
             "f": "geojson",
@@ -190,7 +195,34 @@ def main() -> None:
         "USA_Flood_Hazard_Reduced_Set_gdb/FeatureServer/0/query",
         bbox_params(BBOX, "OBJECTID,FLD_ZONE,ZONE_SUBTY,SFHA_TF", 2000),
     )
-    write_geojson(DATA / "flood-hazards.geojson", slim_features(flood, ["FLD_ZONE", "ZONE_SUBTY", "SFHA_TF"]))
+    flood = slim_features(flood, ["FLD_ZONE", "ZONE_SUBTY", "SFHA_TF"])
+
+    def simplify_ring(ring, step=5):
+        if len(ring) <= 4:
+            return ring
+        kept = ring[::step]
+        if kept[0] != ring[0]:
+            kept = [ring[0]] + kept
+        if kept[-1] != ring[-1]:
+            kept.append(ring[-1])
+        if kept[0] != kept[-1]:
+            kept.append(kept[0])
+        return kept if len(kept) >= 4 else ring
+
+    for feat in flood.get("features", []):
+        geom = feat.get("geometry") or {}
+        t = geom.get("type")
+        if t == "Polygon":
+            feat["geometry"] = {
+                "type": t,
+                "coordinates": [simplify_ring(r) for r in geom.get("coordinates", [])],
+            }
+        elif t == "MultiPolygon":
+            feat["geometry"] = {
+                "type": t,
+                "coordinates": [[simplify_ring(r) for r in poly] for poly in geom.get("coordinates", [])],
+            }
+    write_geojson(DATA / "flood-hazards.geojson", flood)
 
     print("Railroads…")
     rail = query(f"{base}/Ky_Railroads_WGS84WM/MapServer/0/query", bbox_params(WIDE_BBOX, "*"))
@@ -243,7 +275,7 @@ def main() -> None:
     buffers = query(
         f"{base}/Ky_Public_School_Buffers_WGS84WM/MapServer/0/query",
         {
-            "where": "UPPER(CITY)='EMINENCE'",
+            "where": "UPPER(CITY) IN ('EMINENCE','NEW CASTLE')",
             "outFields": "*",
             "returnGeometry": "true",
             "f": "geojson",
@@ -322,8 +354,11 @@ def main() -> None:
     for feat in fire.get("features", []):
         p = feat.get("properties") or {}
         name = p.get("DsplayName") or ""
-        if name.lower() == "eminence fd":
+        lower = name.lower()
+        if lower == "eminence fd":
             name = "Eminence Fire Department"
+        elif lower in ("new castle fd", "newcastle fd"):
+            name = "New Castle Fire Department"
         feat["properties"] = {
             "name": name,
             "agency": p.get("Agency_ID"),
@@ -343,7 +378,7 @@ def main() -> None:
         if len(coords) < 2:
             continue
         lon, lat = coords[0], coords[1]
-        if not (-85.25 <= lon <= -85.10 and 38.32 <= lat <= 38.42):
+        if not (-85.25 <= lon <= -85.10 and 38.32 <= lat <= 38.46):
             continue
         feat["properties"] = {
             "bridge_id": p.get("BRIDGE_ID"),
@@ -368,7 +403,8 @@ def main() -> None:
     for feat in wwtp.get("features", []):
         p = feat.get("properties") or {}
         name = p.get("STPNAME") or p.get("SYS_NAME") or ""
-        if "EMINENCE" not in name.upper():
+        upper = name.upper()
+        if "EMINENCE" not in upper and "NEW CASTLE" not in upper and "NEWCASTLE" not in upper:
             continue
         feat["properties"] = {
             "name": name,
@@ -514,7 +550,8 @@ def derive_analysis() -> None:
 
     vacant_addr = []
     for _, pt, feat in a_pts:
-        if (feat.get("properties") or {}).get("muni", "").lower() != "eminence":
+        muni = (feat.get("properties") or {}).get("muni", "").lower().strip()
+        if muni not in FOCUS_MUNIS:
             continue
         if not nearby(b_grid, pt, 50):
             props = dict(feat.get("properties") or {})
@@ -539,7 +576,10 @@ def derive_analysis() -> None:
             "type": "FeatureCollection",
             "features": vacant_addr,
             "metadata": {
-                "note": "Eminence address points with no building footprint within ~50m. Heuristic only."
+                "note": (
+                    "Eminence and New Castle address points with no building footprint "
+                    "within ~50m. Heuristic only."
+                )
             },
         },
     )
@@ -555,11 +595,17 @@ def derive_analysis() -> None:
     )
 
     occ = Counter((f.get("properties") or {}).get("OCC_CLS") or "Unknown" for f in buildings.get("features", []))
+    by_muni = Counter(
+        ((f.get("properties") or {}).get("muni") or "unknown").strip() or "unknown"
+        for f in addresses.get("features", [])
+    )
     stats = {
         "generated": "2026-07-18",
-        "city": "Eminence",
+        "city": "Eminence & New Castle",
+        "cities": ["Eminence", "New Castle"],
         "buildings": len(buildings.get("features", [])),
         "addresses": len(addresses.get("features", [])),
+        "addresses_by_muni": by_muni.most_common(),
         "roads": len(roads.get("features", [])),
         "schools": len(schools.get("features", [])),
         "bridges": len(bridges.get("features", [])),

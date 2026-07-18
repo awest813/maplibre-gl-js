@@ -11,11 +11,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
+# Eminence through New Castle corridor.
 BBOX = {
     "xmin": -85.21,
     "ymin": 38.34,
     "xmax": -85.14,
-    "ymax": 38.39,
+    "ymax": 38.45,
     "spatialReference": {"wkid": 4326},
 }
 

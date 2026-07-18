@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fetch free OpenStreetMap features for Eminence via Overpass and derive sidewalk gaps."""
+"""Fetch free OpenStreetMap features for Eminence + New Castle via Overpass."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
-BBOX = "38.345,-85.205,38.385,-85.145"  # south,west,north,east
+BBOX = "38.345,-85.205,38.450,-85.145"  # south,west,north,east (Eminence → New Castle)
 OVERPASS_URLS = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
@@ -101,7 +101,7 @@ def derive_missing_sidewalks(sidewalk_feats: list) -> None:
     roads = json.loads((DATA / "roads.geojson").read_text())
     buffers = json.loads((DATA / "school-buffers.geojson").read_text())
     city = json.loads((DATA / "city-boundary.geojson").read_text())
-    city_geom = city["features"][0]["geometry"]
+    city_geoms = [f["geometry"] for f in city.get("features", []) if f.get("geometry")]
     buf_geoms = [f["geometry"] for f in buffers["features"]]
 
     sw_pts = []
@@ -113,12 +113,15 @@ def derive_missing_sidewalks(sidewalk_feats: list) -> None:
             for ls in geom["coordinates"]:
                 sw_pts.extend(ls)
 
-    lat = 38.36
+    lat = 38.39
     m_lat = 111320
     m_lon = 111320 * math.cos(math.radians(lat))
 
     def dist_m(a, b):
         return math.hypot((a[0] - b[0]) * m_lon, (a[1] - b[1]) * m_lat)
+
+    def in_any_city(pt) -> bool:
+        return any(point_in_poly(pt, g) for g in city_geoms)
 
     missing = []
     for feat in roads["features"]:
@@ -129,7 +132,7 @@ def derive_missing_sidewalks(sidewalk_feats: list) -> None:
         if not coords:
             continue
         c = (sum(p[0] for p in coords) / len(coords), sum(p[1] for p in coords) / len(coords))
-        if not point_in_poly(c, city_geom):
+        if not in_any_city(c):
             continue
         name = (feat["properties"].get("name") or "").upper()
         kind = feat["properties"].get("kind")
@@ -137,7 +140,10 @@ def derive_missing_sidewalks(sidewalk_feats: list) -> None:
         important = (
             near_school
             or kind == "state"
-            or any(k in name for k in ["MAIN", "BROADWAY", "ELM", "BALLARD", "HIGHWAY", "KY"])
+            or any(
+                k in name
+                for k in ["MAIN", "BROADWAY", "ELM", "BALLARD", "HIGHWAY", "KY", "COURT", "MAIN CROSS"]
+            )
         )
         if not important:
             continue

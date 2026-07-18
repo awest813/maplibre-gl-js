@@ -1,16 +1,34 @@
 {
-  "title": "Eminence Planning and Zoning Explorer",
+  "title": "Eminence & New Castle Planning and Zoning Explorer",
   "subtitle": "Unofficial public planning tool",
   "contactEmail": "awest40709@ucumberlands.edu",
-  "disclaimer": "This map uses free, publicly accessible GIS data (Kentucky GIS, OpenStreetMap, and public Henry County ArcGIS layers). It is an unofficial planning tool. The HenryCoZoning service layer is named Landuse_Henry—confirm with Planning & Zoning before treating it as official current zoning. Parcel owner names are omitted. Analysis layers are heuristics.",
-  "center": [-85.1805, 38.3645],
-  "zoom": 13.2,
-  "bounds": [-85.21, 38.34, -85.14, 38.39],
+  "disclaimer": "This map uses free, publicly accessible GIS data (Kentucky GIS, OpenStreetMap, and public Henry County ArcGIS layers) for Eminence and New Castle, Kentucky. It is an unofficial planning tool. The HenryCoZoning service layer is named Landuse_Henry—confirm with Planning & Zoning before treating it as official current zoning. Parcel owner names are omitted. Analysis layers are heuristics.",
+  "center": [-85.1745, 38.397],
+  "zoom": 12.2,
+  "bounds": [-85.21, 38.34, -85.14, 38.45],
   "presets": [
     {
       "id": "overview",
-      "name": "Overview",
+      "name": "Both cities",
       "basemap": "osm",
+      "center": [-85.1745, 38.397],
+      "zoom": 12.2,
+      "layers": ["city-boundary", "roads", "buildings", "streams", "waterbodies", "railroads", "schools"]
+    },
+    {
+      "id": "eminence",
+      "name": "Eminence",
+      "basemap": "osm",
+      "center": [-85.1805, 38.3645],
+      "zoom": 13.2,
+      "layers": ["city-boundary", "roads", "buildings", "streams", "waterbodies", "railroads", "schools"]
+    },
+    {
+      "id": "new-castle",
+      "name": "New Castle",
+      "basemap": "osm",
+      "center": [-85.1685, 38.4336],
+      "zoom": 14.1,
       "layers": ["city-boundary", "roads", "buildings", "streams", "waterbodies", "railroads", "schools"]
     },
     {
@@ -90,10 +108,11 @@
       "group": "base",
       "path": "data/city-boundary.geojson",
       "defaultVisible": true,
-      "source": "Kentucky DGI — Corporate Boundary Polygons",
+      "source": "Kentucky DGI — Corporate Boundary Polygons (Eminence & New Castle)",
       "sourceUrl": "https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_CityBnd_Polygon_WGS84WM/MapServer/0",
       "updated": "2026-07-18",
-      "verification_status": "verified_state_gis"
+      "verification_status": "verified_state_gis",
+      "notes": "Includes incorporated limits for Eminence and New Castle in Henry County."
     },
     {
       "id": "roads",
@@ -342,7 +361,7 @@
       "sourceUrl": "https://kygisserver.ky.gov/gis/pages/default.aspx",
       "updated": "2026-07-18",
       "verification_status": "estimated",
-      "notes": "Heuristic: Eminence addresses with no building footprint within ~50m. Not an official vacant-lot list."
+      "notes": "Heuristic: Eminence and New Castle addresses with no building footprint within ~50m. Not an official vacant-lot list."
     },
     {
       "id": "analysis-unaddressed-buildings",
@@ -366,7 +385,7 @@
       "sourceUrl": "https://www.openstreetmap.org/copyright",
       "updated": "2026-07-18",
       "verification_status": "estimated",
-      "notes": "Heuristic: main/school-area roads with no OSM sidewalk/footway nearby. OSM sidewalk mapping in Eminence is sparse."
+      "notes": "Heuristic: main/school-area roads with no OSM sidewalk/footway nearby. OSM sidewalk mapping in both towns is sparse."
     },
     {
       "id": "osm-sidewalks",

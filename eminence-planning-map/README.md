@@ -1,6 +1,6 @@
-# Eminence Planning and Zoning Explorer
+# Eminence & New Castle Planning and Zoning Explorer
 
-Unofficial public planning tool for **Eminence, Kentucky**. Static site — no build step, no backend. Uses free public GIS (Kentucky GIS, OpenStreetMap, Henry County ArcGIS).
+Unofficial public planning tool for **Eminence** and **New Castle**, Kentucky (Henry County). Static site — no build step, no backend. Uses free public GIS (Kentucky GIS, OpenStreetMap, Henry County ArcGIS).
 
 > Not an official city or county product. Confirm zoning currency with Planning & Zoning. Analysis layers are heuristics. Parcel owner names are omitted.
 

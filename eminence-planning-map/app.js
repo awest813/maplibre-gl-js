@@ -266,7 +266,7 @@ function buildStyle(basemapId) {
 
   return {
     version: 8,
-    name: "Eminence free data",
+    name: "Eminence & New Castle free data",
     glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
     sources,
     layers,
@@ -444,7 +444,26 @@ function addLayerStyles(layer) {
         "line-dasharray": [1.2, 1],
       },
     });
-    return [`${id}-fill`, `${id}-line`];
+    map.addLayer({
+      id: `${id}-label`,
+      type: "symbol",
+      source: id,
+      minzoom: 11.2,
+      layout: {
+        "text-field": ["get", "NAME"],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 11.2, 12, 14, 16],
+        "text-transform": "uppercase",
+        "text-letter-spacing": 0.04,
+        "text-max-width": 10,
+      },
+      paint: {
+        "text-color": "#2f4a32",
+        "text-halo-color": "#f3eee4",
+        "text-halo-width": 1.4,
+      },
+    });
+    return [`${id}-fill`, `${id}-line`, `${id}-label`];
   }
 
   if (id === "roads") {
@@ -830,6 +849,7 @@ function renderStats() {
     return;
   }
   const items = [
+    [stats.city || "Eminence & New Castle", "Coverage"],
     [stats.parcels ?? 0, "Parcels"],
     [stats.zoning_polygons ?? 0, "Zoning polygons"],
     [stats.buildings, "Buildings"],
@@ -838,10 +858,13 @@ function renderStats() {
     [stats.public_exempt_parcels ?? 0, "Public / exempt parcels"],
   ];
   el.innerHTML = items
-    .map(
-      ([n, label]) =>
-        `<div class="stat-card"><strong>${Number(n).toLocaleString()}</strong><span>${label}</span></div>`
-    )
+    .map(([n, label]) => {
+      const value =
+        typeof n === "number" && Number.isFinite(n)
+          ? n.toLocaleString()
+          : escapeHtml(n ?? "—");
+      return `<div class="stat-card"><strong>${value}</strong><span>${label}</span></div>`;
+    })
     .join("");
 }
 
@@ -914,6 +937,15 @@ function applyPreset(preset) {
     if (layer._styleIds) setLayerVisibility(layer._styleIds, on);
   }
   if (preset.basemap) setBasemap(preset.basemap);
+  if (Array.isArray(preset.center) && preset.center.length >= 2) {
+    map.easeTo({
+      center: preset.center,
+      zoom: typeof preset.zoom === "number" ? preset.zoom : map.getZoom(),
+      duration: 900,
+    });
+  } else if (typeof preset.zoom === "number") {
+    map.easeTo({ zoom: preset.zoom, duration: 900 });
+  }
   document.querySelectorAll(".preset-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.preset === preset.id);
   });
@@ -992,6 +1024,7 @@ function restackLayers() {
     "analysis-unbuilt-addresses-circle",
     "city-boundary-fill",
     "city-boundary-line",
+    "city-boundary-label",
     "henry-landuse-zoning-label",
     "roads-label",
     "schools-label",
@@ -1210,14 +1243,16 @@ function setupFeatureInspect() {
 }
 
 function computeCityBounds(cityData) {
-  const feature = cityData?.features?.[0];
-  if (!feature?.geometry?.coordinates) return null;
+  const features = cityData?.features || [];
+  if (!features.length) return null;
   const coords = [];
   const walk = (c) => {
     if (typeof c[0] === "number") coords.push(c);
     else c.forEach(walk);
   };
-  walk(feature.geometry.coordinates);
+  for (const feature of features) {
+    if (feature?.geometry?.coordinates) walk(feature.geometry.coordinates);
+  }
   if (!coords.length) return null;
   return coords.reduce(
     (b, c) => b.extend(c),
@@ -1532,7 +1567,7 @@ function setupMapTools() {
         const canvas = map.getCanvas();
         const href = canvas.toDataURL("image/png");
         const link = document.createElement("a");
-        link.download = `eminence-planning-map-${new Date().toISOString().slice(0, 10)}.png`;
+        link.download = `henry-planning-map-${new Date().toISOString().slice(0, 10)}.png`;
         link.href = href;
         link.click();
         setToolStatus("PNG downloaded.");
@@ -1638,7 +1673,7 @@ document.getElementById("correction-form").addEventListener("submit", (e) => {
   e.preventDefault();
   writeUrlState();
   const fd = new FormData(e.target);
-  const subject = encodeURIComponent("Eminence map correction");
+  const subject = encodeURIComponent("Eminence & New Castle map correction");
   const body = encodeURIComponent(
     [
       `Name: ${fd.get("name")}`,
@@ -1650,7 +1685,7 @@ document.getElementById("correction-form").addEventListener("submit", (e) => {
       "",
       `Map link: ${location.href}`,
       "",
-      "Sent from the Eminence Planning and Zoning Explorer (unofficial).",
+      "Sent from the Eminence & New Castle Planning and Zoning Explorer (unofficial).",
     ].join("\n")
   );
   const to = catalog.contactEmail || "";
