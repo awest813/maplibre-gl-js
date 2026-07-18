@@ -100,6 +100,15 @@ const GROUP_LABELS = {
   analysis: "Analysis",
 };
 
+/** Always-on map context — folds stay closed unless other layers in the group are on. */
+const FOUNDATION_LAYERS = new Set([
+  "city-boundary",
+  "roads",
+  "buildings",
+  "streams",
+  "waterbodies",
+]);
+
 const ZONING_COLORS = [
   "match",
   ["upcase", ["to-string", ["get", "district_code"]]],
@@ -1257,10 +1266,35 @@ function swatchHtml(item) {
   return `<span class="${cls}" style="${style}" aria-hidden="true"></span>`;
 }
 
+function toggleLegendLayer(layerId) {
+  const input = document.querySelector(`input[data-layer="${layerId}"]`);
+  if (!input || input.disabled) return;
+  setLayerChecked(layerId, !input.checked);
+  updateLayerCount();
+  openFoldsForActiveLayers();
+  writeUrlState();
+}
+
 function renderLegend() {
   const el = document.getElementById("legend-list");
   const countEl = document.getElementById("legend-count");
   if (!el) return;
+
+  if (!el.dataset.bound) {
+    el.dataset.bound = "1";
+    el.addEventListener("click", (e) => {
+      const row = e.target.closest("[data-legend-layer]");
+      if (!row || !el.contains(row)) return;
+      toggleLegendLayer(row.dataset.legendLayer);
+    });
+    el.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const row = e.target.closest("[data-legend-layer]");
+      if (!row || !el.contains(row)) return;
+      e.preventDefault();
+      toggleLegendLayer(row.dataset.legendLayer);
+    });
+  }
 
   const active = (catalog?.layers || []).filter((layer) => {
     if (failedLayers.has(layer.id)) return false;
@@ -1294,7 +1328,14 @@ function renderLegend() {
       for (const item of legendItemsForLayer(layer)) {
         itemCount += 1;
         rows.push(
-          `<li class="legend-item" data-legend-layer="${escapeHtml(layer.id)}" title="Toggle ${escapeHtml(layer.name)}">
+          `<li
+            class="legend-item"
+            data-legend-layer="${escapeHtml(layer.id)}"
+            role="button"
+            tabindex="0"
+            title="Toggle ${escapeHtml(layer.name)}"
+            aria-label="Toggle ${escapeHtml(layer.name)}"
+          >
             ${swatchHtml(item)}
             <span>${escapeHtml(item.label)}</span>
           </li>`
@@ -1311,21 +1352,9 @@ function renderLegend() {
 
   el.innerHTML = sections.join("");
   if (countEl) {
-    countEl.textContent = itemCount ? `${itemCount}` : "";
+    countEl.textContent = itemCount ? `${itemCount} on` : "";
     countEl.classList.toggle("has-on", itemCount > 0);
   }
-
-  el.querySelectorAll(".legend-item[data-legend-layer]").forEach((row) => {
-    row.addEventListener("click", () => {
-      const layerId = row.dataset.legendLayer;
-      const input = document.querySelector(`input[data-layer="${layerId}"]`);
-      if (!input || input.disabled) return;
-      setLayerChecked(layerId, !input.checked);
-      updateLayerCount();
-      openFoldsForActiveLayers();
-      writeUrlState();
-    });
-  });
 }
 
 function currentBasemapId() {
@@ -1610,12 +1639,14 @@ function openFoldsForActiveLayers() {
     const list = document.getElementById(listId);
     const fold = list?.closest("details");
     if (!fold) continue;
-    const hasOn = catalog.layers.some(
+    // Foundation layers alone should not force folds open — keeps the panel scannable.
+    const hasOverlay = catalog.layers.some(
       (layer) =>
         layer.group === group &&
+        !FOUNDATION_LAYERS.has(layer.id) &&
         document.querySelector(`input[data-layer="${layer.id}"]`)?.checked
     );
-    if (hasOn) fold.open = true;
+    fold.open = hasOverlay;
   }
 }
 
@@ -1720,7 +1751,7 @@ function clearOverlayLayers() {
   updateLayerCount();
   openFoldsForActiveLayers();
   writeUrlState();
-  setToolStatus("Cleared overlays. Base map layers kept.");
+  setToolStatus("Cleared overlays. Foundation layers kept.");
 }
 
 function renderLayerControls(layers) {
