@@ -1,6 +1,8 @@
 # Data request templates — Eminence Planning Map
 
-Use these templates when contacting Henry County and City of Eminence offices. Preferred formats: GeoPackage, shapefile, GeoJSON, file geodatabase, or a spreadsheet with parcel IDs and zoning classifications.
+**Optional / later.** The live map currently uses free public Kentucky GIS only. Use these templates if you later want parcel zoning or PVA polygons that are not posted as free downloads.
+
+Preferred formats: GeoPackage, shapefile, GeoJSON, file geodatabase, or a spreadsheet with parcel IDs and zoning classifications.
 
 ## Henry County Planning and Zoning
 
