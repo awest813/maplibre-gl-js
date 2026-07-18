@@ -10,16 +10,12 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
   group: eminence-pages
   cancel-in-progress: false
 
 jobs:
-  # Reliable path: publish the static site to the gh-pages branch.
-  # Enable once in Settings → Pages → Deploy from a branch → gh-pages / (root).
   publish-branch:
     name: Publish gh-pages branch
     runs-on: ubuntu-latest
@@ -50,56 +46,14 @@ jobs:
       - name: Deployment notes
         run: |
           {
-            echo "## Eminence map publish"
+            echo "## Eminence map published"
             echo ""
-            echo "Published \`eminence-planning-map/\` to the \`gh-pages\` branch."
+            echo "Static files are on the \`gh-pages\` branch."
             echo ""
-            echo "### One-time GitHub Pages setup"
+            echo "### One-time setup (required)"
             echo "1. Open **Settings → Pages**"
-            echo "2. Under **Build and deployment → Source**, choose **Deploy from a branch**"
-            echo "3. Branch: \`gh-pages\` / folder: \`/ (root)\`"
-            echo "4. Save — site will be at: https://awest813.github.io/maplibre-gl-js/"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-  # Optional path once Pages is enabled for GitHub Actions.
-  deploy-actions-pages:
-    name: Deploy GitHub Actions Pages
-    needs: publish-branch
-    runs-on: ubuntu-latest
-    # Do not fail the workflow if Pages Actions is not enabled yet.
-    continue-on-error: true
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Check out
-        uses: actions/checkout@v4
-
-      - name: Configure Pages
-        id: configure
-        continue-on-error: true
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
-      - name: Upload Pages artifact
-        if: steps.configure.outcome == 'success'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: eminence-planning-map
-
-      - name: Deploy to GitHub Pages
-        if: steps.configure.outcome == 'success'
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-      - name: Pages Actions unavailable
-        if: steps.configure.outcome != 'success'
-        run: |
-          {
-            echo "## GitHub Actions Pages not enabled yet"
+            echo "2. **Build and deployment → Source:** Deploy from a branch"
+            echo "3. **Branch:** \`gh-pages\` / \`/ (root)\` → Save"
             echo ""
-            echo "The \`gh-pages\` branch publish still succeeded."
-            echo "To use Actions-based Pages later: **Settings → Pages → Source: GitHub Actions**."
-            echo "Or keep **Deploy from a branch → gh-pages** (recommended for this repo)."
+            echo "Site: https://awest813.github.io/maplibre-gl-js/"
           } >> "$GITHUB_STEP_SUMMARY"
