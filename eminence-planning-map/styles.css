@@ -7,6 +7,7 @@
   --brass: #9a6b2f;
   --creek: #3d6f7a;
   --flood: #c45c26;
+  --clay: #9a3412;
   --road: #3a342c;
   --building: #6b5b4a;
   --panel: rgba(243, 238, 228, 0.94);
@@ -403,6 +404,40 @@ body {
 
 .share-btn:hover {
   background: #243a28;
+}
+
+.tool-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.45rem;
+}
+
+.tool-btn {
+  border: 1px solid rgba(47, 74, 50, 0.25);
+  border-radius: 8px;
+  background: rgba(47, 74, 50, 0.08);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.45rem 0.7rem;
+  cursor: pointer;
+}
+
+.tool-btn:hover {
+  background: rgba(47, 74, 50, 0.14);
+}
+
+.tool-btn.active,
+.tool-btn[aria-pressed="true"] {
+  background: var(--clay);
+  color: var(--paper);
+  border-color: transparent;
+}
+
+.tool-btn-secondary {
+  background: transparent;
 }
 
 .stat-card {

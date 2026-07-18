@@ -65,6 +65,10 @@ Upload the contents of `eminence-planning-map/` (not the whole MapLibre repo) to
 - Address search, loading state, Escape-to-close panel/details
 - Stats, legend, readable feature inspector
 - Correction form (`contactEmail` in `layers.json`)
+- Map tools: PNG export and click-to-measure (distance in ft/mi)
+- Fullscreen control
+
+Useful MapLibre ecosystem references: [awesome-maplibre](https://github.com/maplibre/awesome-maplibre) (e.g. `maplibre-gl-export`, `maplibre-gl-measures`, `maplibre-gl-opacity`, PMTiles). This static app keeps export/measure self-contained so hosting stays CDN-simple.
 
 ## Refresh free data (local / maintainer)
 

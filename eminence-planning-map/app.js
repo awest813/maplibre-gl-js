@@ -186,6 +186,7 @@ const map = new maplibregl.Map({
   style: buildStyle(defaultBasemap),
   center: catalog.center,
   zoom: catalog.zoom,
+  preserveDrawingBuffer: true,
   maxBounds: [
     [catalog.bounds[0] - 0.08, catalog.bounds[1] - 0.08],
     [catalog.bounds[2] + 0.08, catalog.bounds[3] + 0.08],
@@ -194,6 +195,7 @@ const map = new maplibregl.Map({
 
 map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), "top-left");
 map.addControl(new maplibregl.ScaleControl({ unit: "imperial" }), "bottom-left");
+map.addControl(new maplibregl.FullscreenControl(), "top-left");
 
 const featureCard = document.getElementById("feature-card");
 const featureTitle = document.getElementById("feature-title");
@@ -1101,7 +1103,140 @@ map.on("load", async () => {
       status.textContent = "Copy the URL from the address bar.";
     }
   });
+
+  setupMapTools();
 });
+
+function haversineMiles(a, b) {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const R = 3958.7613;
+  const dLat = toRad(b[1] - a[1]);
+  const dLon = toRad(b[0] - a[0]);
+  const lat1 = toRad(a[1]);
+  const lat2 = toRad(b[1]);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+function setupMapTools() {
+  const exportBtn = document.getElementById("export-png-btn");
+  const measureBtn = document.getElementById("measure-btn");
+  const clearBtn = document.getElementById("measure-clear-btn");
+  const measureStatus = document.getElementById("measure-status");
+  const measureCoords = [];
+  let measuring = false;
+
+  map.addSource("measure-line", {
+    type: "geojson",
+    data: EMPTY_FC,
+  });
+  map.addLayer({
+    id: "measure-line",
+    type: "line",
+    source: "measure-line",
+    paint: {
+      "line-color": "#9a3412",
+      "line-width": 2.5,
+      "line-dasharray": [1.5, 1.2],
+    },
+  });
+  map.addLayer({
+    id: "measure-points",
+    type: "circle",
+    source: "measure-line",
+    filter: ["==", "$type", "Point"],
+    paint: {
+      "circle-radius": 5,
+      "circle-color": "#9a3412",
+      "circle-stroke-width": 1.5,
+      "circle-stroke-color": "#f3eee4",
+    },
+  });
+
+  function measureGeoJSON() {
+    const features = measureCoords.map((c) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: c },
+      properties: {},
+    }));
+    if (measureCoords.length >= 2) {
+      features.push({
+        type: "Feature",
+        geometry: { type: "LineString", coordinates: measureCoords },
+        properties: {},
+      });
+    }
+    return { type: "FeatureCollection", features };
+  }
+
+  function updateMeasure() {
+    map.getSource("measure-line").setData(measureGeoJSON());
+    if (!measureCoords.length) {
+      measureStatus.hidden = true;
+      measureStatus.textContent = "";
+      clearBtn.hidden = true;
+      return;
+    }
+    clearBtn.hidden = false;
+    measureStatus.hidden = false;
+    if (measureCoords.length === 1) {
+      measureStatus.textContent = "Click another point to measure distance.";
+      return;
+    }
+    let miles = 0;
+    for (let i = 1; i < measureCoords.length; i += 1) {
+      miles += haversineMiles(measureCoords[i - 1], measureCoords[i]);
+    }
+    const feet = miles * 5280;
+    measureStatus.textContent =
+      feet < 5280
+        ? `Distance: ${feet.toFixed(0)} ft (${miles.toFixed(3)} mi)`
+        : `Distance: ${miles.toFixed(2)} mi (${feet.toFixed(0)} ft)`;
+  }
+
+  function setMeasuring(on) {
+    measuring = on;
+    measureBtn.setAttribute("aria-pressed", String(on));
+    measureBtn.classList.toggle("active", on);
+    map.getCanvas().style.cursor = on ? "crosshair" : "";
+    if (on) {
+      measureStatus.hidden = false;
+      measureStatus.textContent = "Click the map to start measuring.";
+    } else if (!measureCoords.length) {
+      measureStatus.hidden = true;
+    }
+  }
+
+  exportBtn.addEventListener("click", () => {
+    map.triggerRepaint();
+    requestAnimationFrame(() => {
+      const canvas = map.getCanvas();
+      const link = document.createElement("a");
+      link.download = `eminence-planning-map-${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    });
+  });
+
+  measureBtn.addEventListener("click", () => setMeasuring(!measuring));
+  clearBtn.addEventListener("click", () => {
+    measureCoords.length = 0;
+    updateMeasure();
+    if (measuring) measureStatus.textContent = "Click the map to start measuring.";
+  });
+
+  map.on("click", (e) => {
+    if (!measuring) return;
+    measureCoords.push([e.lngLat.lng, e.lngLat.lat]);
+    updateMeasure();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && measuring) setMeasuring(false);
+  });
+}
 
 const panel = document.getElementById("side-panel");
 const toggle = document.getElementById("panel-toggle");

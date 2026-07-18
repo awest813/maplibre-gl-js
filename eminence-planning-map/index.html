@@ -67,6 +67,17 @@
         </section>
 
         <section class="panel-section">
+          <h2>Map tools</h2>
+          <p class="hint">Export and measure (inspired by <a href="https://github.com/maplibre/awesome-maplibre" target="_blank" rel="noopener noreferrer">awesome-maplibre</a> plugins).</p>
+          <div class="tool-list">
+            <button type="button" class="tool-btn" id="export-png-btn">Export PNG</button>
+            <button type="button" class="tool-btn" id="measure-btn" aria-pressed="false">Measure</button>
+            <button type="button" class="tool-btn tool-btn-secondary" id="measure-clear-btn" hidden>Clear measure</button>
+          </div>
+          <p class="hint" id="measure-status" hidden aria-live="polite"></p>
+        </section>
+
+        <section class="panel-section">
           <h2>Basemap</h2>
           <div class="basemap-list" id="basemap-list"></div>
         </section>
